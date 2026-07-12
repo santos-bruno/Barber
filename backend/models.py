@@ -98,6 +98,9 @@ class Appointment(Base):
     duration_minutes = Column(Integer, default=30)
     status = Column(String, default="pendente", index=True)
     source = Column(String, default="admin")  # web | admin
+    # avista = pago no ato | assinatura = usa plano de corte do cliente
+    payment_type = Column(String, default="avista")
+    client_subscription_id = Column(Integer, ForeignKey("client_subscriptions.id"), nullable=True)
     notes = Column(String, default="")
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -116,6 +119,97 @@ class Transaction(Base):
     date = Column(Date, nullable=False, index=True)
     appointment_id = Column(Integer, ForeignKey("appointments.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SubscriptionPlan(Base):
+    """Plano de assinatura de corte que a barbearia oferece aos clientes dela."""
+
+    __tablename__ = "subscription_plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    price = Column(Float, nullable=False)  # valor mensal do plano
+    cuts_per_month = Column(Integer, default=0)  # 0 = ilimitado
+    allowed_weekdays = Column(String, default="")  # ex: "0,1,2" (0=segunda)
+    allowed_time_start = Column(Time, nullable=True)
+    allowed_time_end = Column(Time, nullable=True)
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ClientSubscription(Base):
+    """Assinatura de corte contratada por um cliente da barbearia."""
+
+    __tablename__ = "client_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
+    plan_id = Column(Integer, ForeignKey("subscription_plans.id"), nullable=False)
+    plan_name = Column(String, default="")
+    status = Column(String, default="ativa")  # ativa | cancelada
+    period_start = Column(Date, nullable=True)  # início do ciclo mensal atual
+    cuts_used = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Product(Base):
+    """Produto/material da loja e do estoque."""
+
+    __tablename__ = "products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    description = Column(String, default="")
+    price = Column(Float, default=0.0)  # preço de venda
+    cost = Column(Float, default=0.0)  # custo de compra
+    stock = Column(Integer, default=0)
+    sellable_online = Column(Boolean, default=True)  # aparece na loja virtual
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class StockMovement(Base):
+    """Movimentação de estoque (entrada/saída de material)."""
+
+    __tablename__ = "stock_movements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    type = Column(String, nullable=False)  # entrada | saida
+    qty = Column(Integer, nullable=False)
+    note = Column(String, default="")
+    date = Column(Date, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Order(Base):
+    """Pedido feito na loja virtual."""
+
+    __tablename__ = "orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    customer_name = Column(String, nullable=False)
+    phone = Column(String, default="")
+    total = Column(Float, default=0.0)
+    status = Column(String, default="novo")  # novo | entregue | cancelado
+    source = Column(String, default="web")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
+    product_name = Column(String, default="")
+    qty = Column(Integer, default=1)
+    price = Column(Float, default=0.0)
 
 
 class BusinessHour(Base):

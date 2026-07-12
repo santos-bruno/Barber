@@ -106,6 +106,7 @@ class AppointmentBase(BaseModel):
     date: date_type
     time: time_type
     notes: str = ""
+    payment_type: str = "avista"  # avista | assinatura
 
 
 class AppointmentCreate(AppointmentBase):
@@ -127,6 +128,109 @@ class AppointmentOut(AppointmentBase):
     status: str
     source: str
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------- Subscription plans (planos de corte da barbearia) ----------
+class SubscriptionPlanBase(BaseModel):
+    name: str
+    price: float
+    cuts_per_month: int = 0  # 0 = ilimitado
+    allowed_weekdays: str = ""  # ex: "0,1,2"
+    allowed_time_start: Optional[time_type] = None
+    allowed_time_end: Optional[time_type] = None
+    active: bool = True
+
+
+class SubscriptionPlanOut(SubscriptionPlanBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ClientSubscriptionCreate(BaseModel):
+    client_id: int
+    plan_id: int
+
+
+class ClientSubscriptionOut(BaseModel):
+    id: int
+    client_id: int
+    plan_id: int
+    plan_name: str
+    status: str
+    period_start: Optional[date_type] = None
+    cuts_used: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------- Products / stock ----------
+class ProductBase(BaseModel):
+    name: str
+    description: str = ""
+    price: float = 0.0
+    cost: float = 0.0
+    stock: int = 0
+    sellable_online: bool = True
+    active: bool = True
+
+
+class ProductCreate(ProductBase):
+    pass
+
+
+class ProductOut(ProductBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StockMovementCreate(BaseModel):
+    type: str  # entrada | saida
+    qty: int
+    note: str = ""
+    affects_cash: bool = True  # gera lançamento no caixa
+
+
+class StockMovementOut(BaseModel):
+    id: int
+    product_id: int
+    type: str
+    qty: int
+    note: str
+    date: date_type
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------- Orders (loja virtual) ----------
+class OrderItemIn(BaseModel):
+    product_id: int
+    qty: int = 1
+
+
+class OrderCreate(BaseModel):
+    customer_name: str
+    phone: str = ""
+    items: list[OrderItemIn]
+
+
+class OrderItemOut(BaseModel):
+    product_id: Optional[int] = None
+    product_name: str
+    qty: int
+    price: float
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OrderOut(BaseModel):
+    id: int
+    customer_name: str
+    phone: str
+    total: float
+    status: str
+    source: str
+    created_at: datetime
+    items: list[OrderItemOut] = []
     model_config = ConfigDict(from_attributes=True)
 
 

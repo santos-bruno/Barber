@@ -61,6 +61,7 @@ def create_appointment(
         payload.time,
         source="admin",
         notes=payload.notes,
+        payment_type=payload.payment_type,
     )
 
 

@@ -21,8 +21,10 @@ from routers import (
     cashflow,
     clients,
     hours,
+    products,
     public,
     services,
+    subscriptions,
     superadmin,
 )
 
@@ -54,6 +56,8 @@ app.include_router(clients.router)
 app.include_router(appointments.router)
 app.include_router(cashflow.router)
 app.include_router(hours.router)
+app.include_router(subscriptions.router)
+app.include_router(products.router)
 app.include_router(superadmin.router)
 
 

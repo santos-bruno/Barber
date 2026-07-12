@@ -10,6 +10,7 @@ import schemas
 from booking import compute_availability, create_appointment_core
 from database import get_db
 from security import subscription_active
+from store import create_order_core
 
 router = APIRouter(prefix="/public", tags=["public"])
 
@@ -66,6 +67,7 @@ def public_create_appointment(
     slug: str, payload: schemas.AppointmentCreate, db: Session = Depends(get_db)
 ):
     tenant = _get_tenant(db, slug)
+    # Agendamento pelo site é sempre à vista (assinatura é validada no balcão).
     return create_appointment_core(
         db,
         tenant.id,
@@ -77,4 +79,30 @@ def public_create_appointment(
         payload.time,
         source="web",
         notes=payload.notes,
+        payment_type="avista",
     )
+
+
+@router.get("/{slug}/products", response_model=List[schemas.ProductOut])
+def public_products(slug: str, db: Session = Depends(get_db)):
+    tenant = _get_tenant(db, slug)
+    return (
+        db.query(models.Product)
+        .filter(
+            models.Product.tenant_id == tenant.id,
+            models.Product.active.is_(True),
+            models.Product.sellable_online.is_(True),
+        )
+        .order_by(models.Product.name)
+        .all()
+    )
+
+
+@router.post("/{slug}/orders", response_model=schemas.OrderOut, status_code=201)
+def public_create_order(slug: str, payload: schemas.OrderCreate, db: Session = Depends(get_db)):
+    tenant = _get_tenant(db, slug)
+    order = create_order_core(db, tenant.id, payload.customer_name, payload.phone, payload.items)
+    items = db.query(models.OrderItem).filter(models.OrderItem.order_id == order.id).all()
+    data = schemas.OrderOut.model_validate(order)
+    data.items = [schemas.OrderItemOut.model_validate(i) for i in items]
+    return data
