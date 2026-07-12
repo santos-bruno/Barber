@@ -21,6 +21,8 @@ services:
         generateValue: true          # chave JWT gerada automaticamente
       - key: TRIAL_DAYS
         value: "7"
+      - key: SEED_DEMO
+        value: "true"        # cria a conta demo (demo@agendabarber.com / demo123). Troque p/ false depois.
       - key: PLAN_MENSAL_PRICE
         value: "49.90"
       - key: PLAN_ANUAL_PRICE

@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from database import Base, engine
+from demo import seed_demo
 from routers import (
     appointments,
     auth,
@@ -54,6 +55,11 @@ app.include_router(appointments.router)
 app.include_router(cashflow.router)
 app.include_router(hours.router)
 app.include_router(superadmin.router)
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    seed_demo()
 
 
 @app.get("/health")
