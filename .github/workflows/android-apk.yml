@@ -21,6 +21,10 @@ jobs:
     permissions:
       contents: write
 
+    # URL do backend embutida no app (aponta pro servidor no Render).
+    env:
+      EXPO_PUBLIC_API_URL: https://agenda-barber-o0to.onrender.com
+
     defaults:
       run:
         working-directory: frontend
