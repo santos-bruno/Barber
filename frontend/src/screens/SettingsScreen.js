@@ -10,11 +10,13 @@ import {
   View,
 } from 'react-native';
 
-import { getInfo } from '../api/client';
+import { getHealth } from '../api/client';
 import { getApiUrl, setApiUrl } from '../config';
-import { BUSINESS, COLORS } from '../constants/business';
+import { COLORS } from '../constants/business';
+import { useAuth } from '../context/AuthContext';
 
 export default function SettingsScreen() {
+  const { tenant } = useAuth();
   const [url, setUrl] = useState('');
   const [testing, setTesting] = useState(false);
   const [status, setStatus] = useState(null); // 'ok' | 'fail'
@@ -33,9 +35,9 @@ export default function SettingsScreen() {
     setStatus(null);
     try {
       await setApiUrl(url);
-      const info = await getInfo();
+      await getHealth();
       setStatus('ok');
-      Alert.alert('Conectado!', info?.estabelecimento?.nome || 'Servidor respondendo.');
+      Alert.alert('Conectado!', 'Servidor respondendo.');
     } catch (e) {
       setStatus('fail');
       Alert.alert('Falha', 'Não foi possível conectar. Verifique a URL.');
@@ -75,10 +77,11 @@ export default function SettingsScreen() {
       {status === 'fail' && <Text style={styles.fail}>✕ Sem conexão</Text>}
 
       <View style={styles.info}>
-        <Text style={styles.infoTitle}>{BUSINESS.name}</Text>
-        <Text style={styles.infoText}>{BUSINESS.address}</Text>
-        <Text style={styles.infoText}>WhatsApp: {BUSINESS.whatsappDisplay}</Text>
-        <Text style={styles.infoDev}>Desenvolvido por {BUSINESS.developer}</Text>
+        <Text style={styles.infoTitle}>{tenant?.name || 'Minha Barbearia'}</Text>
+        {!!tenant?.address && <Text style={styles.infoText}>{tenant.address}</Text>}
+        {!!tenant?.whatsapp && <Text style={styles.infoText}>WhatsApp: {tenant.whatsapp}</Text>}
+        {!!tenant?.slug && <Text style={styles.infoText}>Link: /agendar/{tenant.slug}</Text>}
+        <Text style={styles.infoDev}>Agenda Barber</Text>
       </View>
     </ScrollView>
   );

@@ -1,12 +1,13 @@
-// Cliente HTTP para a API da barbearia (nuvem).
+// Cliente HTTP para a API do SaaS (nuvem).
+import { getToken } from '../auth/session';
 import { getApiUrl } from '../config';
 
 async function req(path, options = {}) {
   const base = await getApiUrl();
-  const res = await fetch(base + path, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
+  const token = await getToken();
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(base + path, { ...options, headers });
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
     try {
@@ -21,8 +22,21 @@ async function req(path, options = {}) {
   return res.json();
 }
 
-// ---- Info / health ----
-export const getInfo = () => req('/info');
+// ---- Auth ----
+export const register = (data) =>
+  req('/auth/register', { method: 'POST', body: JSON.stringify(data) });
+export const login = (data) =>
+  req('/auth/login', { method: 'POST', body: JSON.stringify(data) });
+export const getMe = () => req('/auth/me');
+
+// ---- Billing ----
+export const getPlans = () => req('/billing/plans');
+export const getBillingStatus = () => req('/billing/status');
+export const subscribe = (data) =>
+  req('/billing/subscribe', { method: 'POST', body: JSON.stringify(data) });
+
+// ---- Health ----
+export const getHealth = () => req('/health');
 
 // ---- Services ----
 export const getServices = () => req('/services');
