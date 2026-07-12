@@ -4,7 +4,9 @@ name: Build Android APK
 # Também permite disparo manual pela aba Actions.
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - claude/barbearia-perison-app-setup-kzvgv5
   workflow_dispatch:
 
 jobs:
