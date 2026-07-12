@@ -1,4 +1,4 @@
-"""Endpoints de serviços."""
+"""Endpoints de serviços (escopados por barbearia)."""
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,21 +7,30 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
+from security import require_active_subscription
 
 router = APIRouter(prefix="/services", tags=["services"])
 
 
 @router.get("", response_model=List[schemas.ServiceOut])
-def list_services(only_active: bool = True, db: Session = Depends(get_db)):
-    query = db.query(models.Service)
+def list_services(
+    only_active: bool = True,
+    tenant: models.Tenant = Depends(require_active_subscription),
+    db: Session = Depends(get_db),
+):
+    query = db.query(models.Service).filter(models.Service.tenant_id == tenant.id)
     if only_active:
         query = query.filter(models.Service.active.is_(True))
     return query.order_by(models.Service.name).all()
 
 
 @router.post("", response_model=schemas.ServiceOut, status_code=201)
-def create_service(payload: schemas.ServiceCreate, db: Session = Depends(get_db)):
-    service = models.Service(**payload.model_dump())
+def create_service(
+    payload: schemas.ServiceCreate,
+    tenant: models.Tenant = Depends(require_active_subscription),
+    db: Session = Depends(get_db),
+):
+    service = models.Service(tenant_id=tenant.id, **payload.model_dump())
     db.add(service)
     db.commit()
     db.refresh(service)
@@ -30,9 +39,16 @@ def create_service(payload: schemas.ServiceCreate, db: Session = Depends(get_db)
 
 @router.put("/{service_id}", response_model=schemas.ServiceOut)
 def update_service(
-    service_id: int, payload: schemas.ServiceCreate, db: Session = Depends(get_db)
+    service_id: int,
+    payload: schemas.ServiceCreate,
+    tenant: models.Tenant = Depends(require_active_subscription),
+    db: Session = Depends(get_db),
 ):
-    service = db.get(models.Service, service_id)
+    service = (
+        db.query(models.Service)
+        .filter(models.Service.id == service_id, models.Service.tenant_id == tenant.id)
+        .first()
+    )
     if not service:
         raise HTTPException(status_code=404, detail="Serviço não encontrado.")
     for key, value in payload.model_dump().items():
@@ -43,10 +59,17 @@ def update_service(
 
 
 @router.delete("/{service_id}", status_code=204)
-def delete_service(service_id: int, db: Session = Depends(get_db)):
-    service = db.get(models.Service, service_id)
+def delete_service(
+    service_id: int,
+    tenant: models.Tenant = Depends(require_active_subscription),
+    db: Session = Depends(get_db),
+):
+    service = (
+        db.query(models.Service)
+        .filter(models.Service.id == service_id, models.Service.tenant_id == tenant.id)
+        .first()
+    )
     if not service:
         raise HTTPException(status_code=404, detail="Serviço não encontrado.")
-    # Desativa em vez de apagar (preserva histórico de agendamentos).
     service.active = False
     db.commit()

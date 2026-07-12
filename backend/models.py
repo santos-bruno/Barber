@@ -1,4 +1,4 @@
-"""Modelos ORM (SQLAlchemy) da aplicação."""
+"""Modelos ORM (SQLAlchemy) — SaaS multi-barbearia."""
 from datetime import datetime
 
 from sqlalchemy import (
@@ -17,12 +17,51 @@ from sqlalchemy.orm import relationship
 from database import Base
 
 
-class Service(Base):
-    """Serviço oferecido pela barbearia (corte, barba, etc.)."""
+class Tenant(Base):
+    """Uma barbearia assinante do serviço (tenant)."""
 
+    __tablename__ = "tenants"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    slug = Column(String, unique=True, index=True, nullable=False)  # p/ link público
+    address = Column(String, default="")
+    whatsapp = Column(String, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Assinatura
+    plan = Column(String, default="")          # mensal | anual | ""
+    # trial | active | overdue | canceled
+    subscription_status = Column(String, default="trial")
+    trial_ends_at = Column(DateTime, nullable=True)
+    current_period_end = Column(DateTime, nullable=True)
+    asaas_customer_id = Column(String, default="")
+    asaas_subscription_id = Column(String, default="")
+
+    users = relationship("User", back_populates="tenant")
+
+
+class User(Base):
+    """Usuário dono/operador de uma barbearia."""
+
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, default="owner")  # owner | superadmin
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    tenant = relationship("Tenant", back_populates="users")
+
+
+class Service(Base):
     __tablename__ = "services"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     description = Column(String, default="")
     price = Column(Float, nullable=False)
@@ -31,11 +70,10 @@ class Service(Base):
 
 
 class Client(Base):
-    """Cliente cadastrado (fluxo de clientes / contatos)."""
-
     __tablename__ = "clients"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     phone = Column(String, default="", index=True)
     notes = Column(String, default="")
@@ -45,11 +83,10 @@ class Client(Base):
 
 
 class Appointment(Base):
-    """Agendamento (feito pelo admin ou pelo site do cliente)."""
-
     __tablename__ = "appointments"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=True)
     customer_name = Column(String, nullable=False)
     phone = Column(String, default="")
@@ -59,10 +96,8 @@ class Appointment(Base):
     date = Column(Date, nullable=False, index=True)
     time = Column(Time, nullable=False)
     duration_minutes = Column(Integer, default=30)
-    # pendente | confirmado | concluido | cancelado
     status = Column(String, default="pendente", index=True)
-    # web | admin
-    source = Column(String, default="admin")
+    source = Column(String, default="admin")  # web | admin
     notes = Column(String, default="")
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -70,13 +105,11 @@ class Appointment(Base):
 
 
 class Transaction(Base):
-    """Lançamento de fluxo de caixa (entrada ou saída)."""
-
     __tablename__ = "transactions"
 
     id = Column(Integer, primary_key=True, index=True)
-    # entrada | saida
-    type = Column(String, nullable=False, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    type = Column(String, nullable=False, index=True)  # entrada | saida
     amount = Column(Float, nullable=False)
     description = Column(String, default="")
     category = Column(String, default="")
@@ -86,12 +119,11 @@ class Transaction(Base):
 
 
 class BusinessHour(Base):
-    """Horário de funcionamento por dia da semana (0=segunda ... 6=domingo)."""
-
     __tablename__ = "business_hours"
 
     id = Column(Integer, primary_key=True, index=True)
-    weekday = Column(Integer, nullable=False, unique=True)  # 0..6
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    weekday = Column(Integer, nullable=False)  # 0..6
     is_open = Column(Boolean, default=True)
     open_time = Column(Time, nullable=True)
     close_time = Column(Time, nullable=True)

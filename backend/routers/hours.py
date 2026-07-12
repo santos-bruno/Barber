@@ -1,4 +1,4 @@
-"""Endpoints de horário de funcionamento."""
+"""Endpoints de horário de funcionamento (escopados por barbearia)."""
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,14 +7,19 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
+from security import require_active_subscription
 
 router = APIRouter(prefix="/hours", tags=["hours"])
 
 
 @router.get("", response_model=List[schemas.BusinessHourOut])
-def list_hours(db: Session = Depends(get_db)):
+def list_hours(
+    tenant: models.Tenant = Depends(require_active_subscription),
+    db: Session = Depends(get_db),
+):
     return (
         db.query(models.BusinessHour)
+        .filter(models.BusinessHour.tenant_id == tenant.id)
         .order_by(models.BusinessHour.weekday)
         .all()
     )
@@ -22,17 +27,23 @@ def list_hours(db: Session = Depends(get_db)):
 
 @router.put("/{weekday}", response_model=schemas.BusinessHourOut)
 def upsert_hour(
-    weekday: int, payload: schemas.BusinessHourBase, db: Session = Depends(get_db)
+    weekday: int,
+    payload: schemas.BusinessHourBase,
+    tenant: models.Tenant = Depends(require_active_subscription),
+    db: Session = Depends(get_db),
 ):
     if weekday < 0 or weekday > 6:
         raise HTTPException(status_code=400, detail="weekday deve ser 0..6.")
     bh = (
         db.query(models.BusinessHour)
-        .filter(models.BusinessHour.weekday == weekday)
+        .filter(
+            models.BusinessHour.tenant_id == tenant.id,
+            models.BusinessHour.weekday == weekday,
+        )
         .first()
     )
     if not bh:
-        bh = models.BusinessHour(weekday=weekday)
+        bh = models.BusinessHour(tenant_id=tenant.id, weekday=weekday)
         db.add(bh)
     bh.is_open = payload.is_open
     bh.open_time = payload.open_time

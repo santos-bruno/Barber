@@ -4,7 +4,62 @@ from datetime import datetime
 from datetime import time as time_type
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
+
+
+# ---------- Auth / Tenant ----------
+class RegisterInput(BaseModel):
+    barbershop_name: str
+    owner_name: str
+    email: EmailStr
+    password: str
+    whatsapp: str = ""
+    address: str = ""
+
+
+class LoginInput(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class TenantOut(BaseModel):
+    id: int
+    name: str
+    slug: str
+    address: str
+    whatsapp: str
+    plan: str
+    subscription_status: str
+    trial_ends_at: Optional[datetime] = None
+    current_period_end: Optional[datetime] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserOut(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+    role: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AuthOut(BaseModel):
+    token: str
+    user: UserOut
+    tenant: TenantOut
+
+
+# ---------- Billing ----------
+class SubscribeInput(BaseModel):
+    plan: str  # mensal | anual
+    cpf_cnpj: str
+    billing_type: str = "CREDIT_CARD"  # CREDIT_CARD | PIX | BOLETO | UNDEFINED
+
+
+class CheckoutOut(BaseModel):
+    checkout_url: str
+    subscription_id: str
+    status: str
 
 
 # ---------- Services ----------

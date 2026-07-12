@@ -1,0 +1,140 @@
+"""Lógica compartilhada de disponibilidade e criação de agendamentos."""
+from datetime import date as date_type
+from datetime import datetime, time
+from typing import List, Optional
+
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+
+import models
+from routers.clients import get_or_create_client
+
+
+def _to_minutes(t: time) -> int:
+    return t.hour * 60 + t.minute
+
+
+def _minutes_to_hhmm(m: int) -> str:
+    return f"{m // 60:02d}:{m % 60:02d}"
+
+
+def compute_availability(
+    db: Session, tenant_id: int, date: date_type, service_id: Optional[int]
+) -> List[str]:
+    weekday = date.weekday()  # 0=segunda ... 6=domingo
+    bh = (
+        db.query(models.BusinessHour)
+        .filter(
+            models.BusinessHour.tenant_id == tenant_id,
+            models.BusinessHour.weekday == weekday,
+        )
+        .first()
+    )
+    if not bh or not bh.is_open or not bh.open_time or not bh.close_time:
+        return []
+
+    step = bh.slot_minutes or 30
+    duration = step
+    if service_id:
+        service = (
+            db.query(models.Service)
+            .filter(models.Service.id == service_id, models.Service.tenant_id == tenant_id)
+            .first()
+        )
+        if service:
+            duration = service.duration_minutes
+
+    open_m = _to_minutes(bh.open_time)
+    close_m = _to_minutes(bh.close_time)
+
+    booked = (
+        db.query(models.Appointment)
+        .filter(
+            models.Appointment.tenant_id == tenant_id,
+            models.Appointment.date == date,
+            models.Appointment.status != "cancelado",
+        )
+        .all()
+    )
+    busy = [
+        (_to_minutes(a.time), _to_minutes(a.time) + (a.duration_minutes or step))
+        for a in booked
+    ]
+
+    now_min = -1
+    if date == datetime.now().date():
+        now_min = datetime.now().hour * 60 + datetime.now().minute
+
+    slots: List[str] = []
+    start = open_m
+    while start + duration <= close_m:
+        end = start + duration
+        overlaps = any(start < b_end and b_start < end for b_start, b_end in busy)
+        if not overlaps and start > now_min:
+            slots.append(_minutes_to_hhmm(start))
+        start += step
+    return slots
+
+
+def create_appointment_core(
+    db: Session,
+    tenant_id: int,
+    customer_name: str,
+    phone: str,
+    service_id: Optional[int],
+    service_name: str,
+    date: date_type,
+    time_value: time,
+    source: str,
+    notes: str = "",
+) -> models.Appointment:
+    if not customer_name.strip():
+        raise HTTPException(status_code=400, detail="Nome do cliente é obrigatório.")
+
+    price = 0.0
+    duration = 30
+    resolved_name = service_name
+    if service_id:
+        service = (
+            db.query(models.Service)
+            .filter(models.Service.id == service_id, models.Service.tenant_id == tenant_id)
+            .first()
+        )
+        if service:
+            price = service.price
+            duration = service.duration_minutes
+            resolved_name = service.name
+
+    conflict = (
+        db.query(models.Appointment)
+        .filter(
+            models.Appointment.tenant_id == tenant_id,
+            models.Appointment.date == date,
+            models.Appointment.time == time_value,
+            models.Appointment.status != "cancelado",
+        )
+        .first()
+    )
+    if conflict:
+        raise HTTPException(status_code=409, detail="Horário já ocupado.")
+
+    client = get_or_create_client(db, tenant_id, customer_name.strip(), phone)
+    appointment = models.Appointment(
+        tenant_id=tenant_id,
+        client_id=client.id,
+        customer_name=customer_name.strip(),
+        phone=phone,
+        service_id=service_id,
+        service_name=resolved_name,
+        price=price,
+        date=date,
+        time=time_value,
+        duration_minutes=duration,
+        status="pendente",
+        source=source,
+        notes=notes,
+    )
+    db.add(appointment)
+    db.commit()
+    db.refresh(appointment)
+    return appointment

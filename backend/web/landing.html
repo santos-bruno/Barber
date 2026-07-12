@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agenda Barber — Sistema de Agendamento para Barbearias</title>
+  <style>
+    :root { --bg:#141414; --surface:#1f1f1f; --card:#262626; --primary:#c9a227; --text:#f5f5f5; --muted:#a8a8a8; --border:#3a3a3a; --wa:#25D366; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+    .wrap { max-width:960px; margin:0 auto; padding:0 20px; }
+    header { text-align:center; padding:56px 20px 32px; }
+    .logo { font-size:60px; }
+    h1 { font-size:32px; margin-top:10px; }
+    .tag { color:var(--muted); font-size:18px; margin-top:12px; max-width:560px; margin-left:auto; margin-right:auto; }
+    .cta-row { margin-top:26px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+    .btn { border:none; border-radius:12px; padding:14px 24px; font-size:16px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; }
+    .btn-primary { background:var(--primary); color:#141414; }
+    .btn-ghost { background:transparent; color:var(--primary); border:2px solid var(--primary); }
+    section { padding:32px 0; }
+    h2 { text-align:center; font-size:24px; margin-bottom:24px; }
+    .features { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; }
+    .feature { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; }
+    .feature .ic { font-size:30px; }
+    .feature h3 { font-size:16px; margin:10px 0 6px; }
+    .feature p { color:var(--muted); font-size:14px; }
+    .plans { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; max-width:640px; margin:0 auto; }
+    .plan { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:26px; text-align:center; }
+    .plan.best { border-color:var(--primary); }
+    .plan .pname { color:var(--primary); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+    .plan .price { font-size:34px; font-weight:800; margin:10px 0 2px; }
+    .plan .per { color:var(--muted); font-size:14px; }
+    .plan ul { list-style:none; margin:18px 0; text-align:left; }
+    .plan li { padding:5px 0; color:var(--muted); }
+    .plan li::before { content:'✓ '; color:var(--wa); font-weight:700; }
+    .badge { display:inline-block; background:var(--primary); color:#141414; font-size:12px; font-weight:700; padding:3px 10px; border-radius:10px; margin-bottom:8px; }
+    footer { text-align:center; color:var(--muted); font-size:13px; padding:30px 20px; border-top:1px solid var(--border); margin-top:20px; }
+    /* modal */
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; padding:16px; z-index:50; }
+    .modal.open { display:flex; }
+    .modal-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px; width:100%; max-width:420px; }
+    .modal-card h3 { margin-bottom:16px; }
+    label { display:block; font-size:13px; color:var(--muted); margin:10px 0 4px; }
+    input, select { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; color:var(--text); font-size:15px; }
+    .msg { margin-top:12px; font-size:14px; }
+    .msg.err { color:#ff6b6b; } .msg.ok { color:var(--wa); }
+    .link { color:var(--primary); cursor:pointer; text-decoration:underline; background:none; border:none; font-size:14px; }
+    .close { float:right; cursor:pointer; color:var(--muted); font-size:22px; background:none; border:none; }
+    .panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; margin-top:12px; }
+    .copy { display:flex; gap:8px; margin-top:8px; }
+    .copy input { font-size:13px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">💈</div>
+      <h1>Agenda Barber</h1>
+      <p class="tag">O sistema completo para sua barbearia: agenda online, clientes, fluxo de caixa e um link para seus clientes agendarem sozinhos.</p>
+      <div class="cta-row">
+        <button class="btn btn-primary" onclick="openModal('signup')">Começar grátis</button>
+        <button class="btn btn-ghost" onclick="openModal('login')">Entrar</button>
+      </div>
+      <p id="trial-note" class="per" style="margin-top:14px;color:var(--muted)"></p>
+    </header>
+
+    <section>
+      <h2>Tudo em um só lugar</h2>
+      <div class="features">
+        <div class="feature"><div class="ic">📅</div><h3>Agenda online</h3><p>Clientes agendam pelo link, sem telefonema. Você vê tudo em tempo real.</p></div>
+        <div class="feature"><div class="ic">👥</div><h3>Clientes & contatos</h3><p>Histórico de cada cliente e contato rápido no WhatsApp.</p></div>
+        <div class="feature"><div class="ic">💰</div><h3>Fluxo de caixa</h3><p>Entradas e saídas com saldo automático a cada atendimento.</p></div>
+        <div class="feature"><div class="ic">🕐</div><h3>Horários flexíveis</h3><p>Defina seus dias e horários; o sistema mostra só o que está livre.</p></div>
+        <div class="feature"><div class="ic">📱</div><h3>App no celular</h3><p>Gerencie tudo pelo aplicativo Android, de onde estiver.</p></div>
+        <div class="feature"><div class="ic">🔗</div><h3>Seu link exclusivo</h3><p>Coloque no Instagram e nos anúncios. Agendamentos caem direto na sua agenda.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Planos</h2>
+      <div class="plans" id="plans"><p class="per" style="text-align:center">Carregando planos…</p></div>
+    </section>
+  </div>
+
+  <footer>Agenda Barber · Sistema de agendamento para barbearias</footer>
+
+  <!-- Signup modal -->
+  <div class="modal" id="m-signup">
+    <div class="modal-card">
+      <button class="close" onclick="closeModal()">×</button>
+      <h3>Criar conta grátis</h3>
+      <div id="signup-form">
+        <label>Nome da barbearia</label><input id="s-shop" />
+        <label>Seu nome</label><input id="s-owner" />
+        <label>E-mail</label><input id="s-email" type="email" />
+        <label>Senha (mín. 6)</label><input id="s-pass" type="password" />
+        <label>WhatsApp (com DDD)</label><input id="s-wa" placeholder="93 99999-9999" />
+        <button class="btn btn-primary" style="width:100%;margin-top:16px" onclick="doSignup()">Criar conta</button>
+        <div class="msg" id="s-msg"></div>
+        <p style="margin-top:12px">Já tem conta? <button class="link" onclick="openModal('login')">Entrar</button></p>
+      </div>
+      <div id="signup-done" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Login modal -->
+  <div class="modal" id="m-login">
+    <div class="modal-card">
+      <button class="close" onclick="closeModal()">×</button>
+      <h3>Entrar</h3>
+      <label>E-mail</label><input id="l-email" type="email" />
+      <label>Senha</label><input id="l-pass" type="password" />
+      <button class="btn btn-primary" style="width:100%;margin-top:16px" onclick="doLogin()">Entrar</button>
+      <div class="msg" id="l-msg"></div>
+      <p style="margin-top:12px">Não tem conta? <button class="link" onclick="openModal('signup')">Criar grátis</button></p>
+    </div>
+  </div>
+
+  <script>
+    let PLANS = [];
+    const $ = (id) => document.getElementById(id);
+
+    async function loadPlans() {
+      try {
+        const data = await (await fetch('/billing/plans')).json();
+        PLANS = data.plans;
+        $('trial-note').textContent = `Teste grátis por ${data.trial_days} dias · sem cartão para começar`;
+        const box = $('plans'); box.innerHTML = '';
+        PLANS.forEach((p) => {
+          const best = p.id === 'anual';
+          const per = p.id === 'anual' ? '/ano' : '/mês';
+          const el = document.createElement('div');
+          el.className = 'plan' + (best ? ' best' : '');
+          el.innerHTML = `${best ? '<div class="badge">Melhor valor</div>' : ''}
+            <div class="pname">${p.label}</div>
+            <div class="price">R$ ${Number(p.price).toFixed(2).replace('.', ',')}</div>
+            <div class="per">${per}</div>
+            <ul><li>Agenda online ilimitada</li><li>Clientes e caixa</li><li>App + link de agendamento</li><li>Suporte</li></ul>
+            <button class="btn btn-primary" style="width:100%" onclick="openModal('signup')">Assinar ${p.label}</button>`;
+          box.appendChild(el);
+        });
+      } catch (e) { $('plans').innerHTML = '<p class="per" style="text-align:center">Não foi possível carregar os planos.</p>'; }
+    }
+
+    function openModal(which) {
+      closeModal();
+      $('m-' + which).classList.add('open');
+    }
+    function closeModal() { document.querySelectorAll('.modal').forEach((m) => m.classList.remove('open')); }
+
+    async function doSignup() {
+      const msg = $('s-msg'); msg.textContent = ''; msg.className = 'msg';
+      const body = {
+        barbershop_name: $('s-shop').value.trim(), owner_name: $('s-owner').value.trim(),
+        email: $('s-email').value.trim(), password: $('s-pass').value, whatsapp: $('s-wa').value.trim(),
+      };
+      if (!body.barbershop_name || !body.owner_name || !body.email || !body.password) { msg.className = 'msg err'; msg.textContent = 'Preencha todos os campos.'; return; }
+      try {
+        const r = await fetch('/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await r.json();
+        if (!r.ok) { msg.className = 'msg err'; msg.textContent = data.detail || 'Erro ao criar conta.'; return; }
+        showAfterAuth(data);
+      } catch (e) { msg.className = 'msg err'; msg.textContent = 'Erro de conexão.'; }
+    }
+
+    async function doLogin() {
+      const msg = $('l-msg'); msg.textContent = ''; msg.className = 'msg';
+      try {
+        const r = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: $('l-email').value.trim(), password: $('l-pass').value }) });
+        const data = await r.json();
+        if (!r.ok) { msg.className = 'msg err'; msg.textContent = data.detail || 'E-mail ou senha inválidos.'; return; }
+        openModal('signup'); showAfterAuth(data);
+      } catch (e) { msg.className = 'msg err'; msg.textContent = 'Erro de conexão.'; }
+    }
+
+    function showAfterAuth(auth) {
+      const link = `${location.origin}/agendar/${auth.tenant.slug}`;
+      $('signup-form').style.display = 'none';
+      const done = $('signup-done'); done.style.display = 'block';
+      const status = auth.tenant.subscription_status;
+      done.innerHTML = `
+        <div class="panel">
+          <strong>✅ Bem-vindo, ${auth.user.name}!</strong>
+          <p class="per" style="margin-top:6px">Barbearia: ${auth.tenant.name} · Status: ${status}</p>
+          <label>Seu link de agendamento (divulgue!)</label>
+          <div class="copy"><input id="booklink" readonly value="${link}" /><button class="btn btn-primary" onclick="copyLink()">Copiar</button></div>
+          <p class="per" style="margin-top:10px">Baixe o app admin para gerenciar tudo pelo celular.</p>
+        </div>
+        <div class="panel">
+          <strong>Assinar agora</strong>
+          <label>Plano</label>
+          <select id="sub-plan">${PLANS.map((p) => `<option value="${p.id}">${p.label} — R$ ${Number(p.price).toFixed(2)}</option>`).join('')}</select>
+          <label>CPF ou CNPJ</label><input id="sub-doc" placeholder="Somente números" />
+          <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="doSubscribe('${auth.token}')">Ir para o pagamento</button>
+          <div class="msg" id="sub-msg"></div>
+        </div>`;
+    }
+
+    function copyLink() {
+      const el = $('booklink'); el.select(); document.execCommand('copy');
+    }
+
+    async function doSubscribe(token) {
+      const msg = $('sub-msg'); msg.textContent = 'Processando…'; msg.className = 'msg';
+      try {
+        const r = await fetch('/billing/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ plan: $('sub-plan').value, cpf_cnpj: $('sub-doc').value.replace(/\D/g, ''), billing_type: 'CREDIT_CARD' }),
+        });
+        const data = await r.json();
+        if (!r.ok) { msg.className = 'msg err'; msg.textContent = data.detail || 'Erro ao iniciar pagamento.'; return; }
+        if (data.checkout_url) { window.location.href = data.checkout_url; }
+        else { msg.className = 'msg ok'; msg.textContent = 'Assinatura criada! Verifique seu e-mail para pagar.'; }
+      } catch (e) { msg.className = 'msg err'; msg.textContent = 'Erro de conexão.'; }
+    }
+
+    loadPlans();
+  </script>
+</body>
+</html>
