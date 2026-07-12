@@ -13,6 +13,9 @@ import HomeScreen from './src/screens/HomeScreen';
 import HoursScreen from './src/screens/HoursScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import NewAppointmentScreen from './src/screens/NewAppointmentScreen';
+import OrdersScreen from './src/screens/OrdersScreen';
+import PlansScreen from './src/screens/PlansScreen';
+import ProductsScreen from './src/screens/ProductsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import SubscriptionScreen from './src/screens/SubscriptionScreen';
@@ -44,6 +47,9 @@ function AppStack() {
       <Stack.Screen name="Clients" component={ClientsScreen} options={{ title: 'Clientes' }} />
       <Stack.Screen name="CashFlow" component={CashFlowScreen} options={{ title: 'Fluxo de Caixa' }} />
       <Stack.Screen name="Hours" component={HoursScreen} options={{ title: 'Horários' }} />
+      <Stack.Screen name="Plans" component={PlansScreen} options={{ title: 'Planos de Corte' }} />
+      <Stack.Screen name="Products" component={ProductsScreen} options={{ title: 'Loja / Estoque' }} />
+      <Stack.Screen name="Orders" component={OrdersScreen} options={{ title: 'Pedidos' }} />
       <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'Assinatura' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Configurações' }} />
     </Stack.Navigator>

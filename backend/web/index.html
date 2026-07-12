@@ -49,6 +49,9 @@
     footer{text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px;}
     .err{color:var(--danger);font-size:14px;margin-top:10px;}
     .fatal{text-align:center;padding:50px 16px;color:var(--muted);}
+    .tabs{display:flex;gap:8px;justify-content:center;margin-top:14px;}
+    .tab{padding:8px 16px;border-radius:999px;border:1px solid var(--border);color:var(--muted);text-decoration:none;font-size:14px;font-weight:600;}
+    .tab.active{background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#141414;border-color:transparent;}
   </style>
 </head>
 <body>
@@ -56,6 +59,10 @@
     <div class="badge">💈</div>
     <h1 id="biz-name">Agendamento Online</h1>
     <div class="addr" id="biz-addr"></div>
+    <div class="tabs">
+      <a class="tab active" href="#">Agendar</a>
+      <a class="tab" id="tab-loja" href="#">Loja</a>
+    </div>
   </header>
 
   <div id="fatal" class="fatal" style="display:none"></div>
@@ -100,6 +107,7 @@
     const sel = { service: null, date: null, time: null };
     const $ = (id) => document.getElementById(id);
     const fmtDateBR = (iso) => { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
+    $('tab-loja').href = '/loja/' + slug;
 
     async function init() {
       if (!slug) { showFatal('Link inválido. Peça o link de agendamento à barbearia.'); return; }

@@ -12,8 +12,14 @@ import {
   View,
 } from 'react-native';
 
-import { createClient, getClients } from '../api/client';
+import {
+  createClient,
+  createClientSub,
+  getClients,
+  getPlansCorte,
+} from '../api/client';
 import { COLORS } from '../constants/business';
+import { money } from '../utils/date';
 
 export default function ClientsScreen() {
   const [clients, setClients] = useState([]);
@@ -23,6 +29,28 @@ export default function ClientsScreen() {
   const [modal, setModal] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [assignFor, setAssignFor] = useState(null); // client
+  const [plans, setPlans] = useState([]);
+
+  const openAssign = async (client) => {
+    try {
+      const list = await getPlansCorte();
+      if (!list.length) {
+        Alert.alert('Sem planos', 'Crie um plano de assinatura em "Planos" primeiro.');
+        return;
+      }
+      setPlans(list);
+      setAssignFor(client);
+    } catch (e) { Alert.alert('Erro', e.message); }
+  };
+
+  const assignPlan = async (plan) => {
+    try {
+      await createClientSub({ client_id: assignFor.id, plan_id: plan.id });
+      setAssignFor(null);
+      Alert.alert('Pronto!', `${assignFor.name} agora assina o plano ${plan.name}.`);
+    } catch (e) { Alert.alert('Erro', e.message); }
+  };
 
   const load = useCallback(async (q = '') => {
     setLoading(true);
@@ -68,6 +96,9 @@ export default function ClientsScreen() {
         <Text style={styles.name}>{item.name}</Text>
         <Text style={styles.phone}>{item.phone || 'sem telefone'}</Text>
       </View>
+      <TouchableOpacity style={styles.assinBtn} onPress={() => openAssign(item)}>
+        <Text style={styles.assinText}>Assinar</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.waBtn} onPress={() => whatsapp(item)}>
         <Text style={styles.waText}>WhatsApp</Text>
       </TouchableOpacity>
@@ -120,6 +151,26 @@ export default function ClientsScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={!!assignFor} transparent animationType="slide" onRequestClose={() => setAssignFor(null)}>
+        <View style={styles.modalBg}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Assinar plano — {assignFor?.name}</Text>
+            {plans.map((p) => (
+              <TouchableOpacity key={p.id} style={styles.planOpt} onPress={() => assignPlan(p)}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.planOptName}>{p.name}</Text>
+                  <Text style={styles.planOptInfo}>{p.cuts_per_month ? `${p.cuts_per_month} cortes/mês` : 'ilimitado'}</Text>
+                </View>
+                <Text style={styles.planOptPrice}>{money(p.price)}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={[styles.mBtn, styles.mCancel, { marginTop: 8 }]} onPress={() => setAssignFor(null)}>
+              <Text style={styles.mBtnText}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -134,8 +185,14 @@ const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: COLORS.border },
   name: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   phone: { color: COLORS.textMuted, marginTop: 2 },
-  waBtn: { backgroundColor: COLORS.whatsapp, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 },
+  waBtn: { backgroundColor: COLORS.whatsapp, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
   waText: { color: '#fff', fontWeight: '700' },
+  assinBtn: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginRight: 8 },
+  assinText: { color: COLORS.primary, fontWeight: '700' },
+  planOpt: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 14, marginTop: 10 },
+  planOptName: { color: COLORS.text, fontWeight: '700', fontSize: 15 },
+  planOptInfo: { color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
+  planOptPrice: { color: COLORS.primary, fontWeight: '800', fontSize: 16 },
   empty: { color: COLORS.textMuted, textAlign: 'center', marginTop: 40 },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   modalCard: { backgroundColor: COLORS.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 },

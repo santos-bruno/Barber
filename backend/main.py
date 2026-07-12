@@ -88,3 +88,9 @@ def landing():
 def booking(slug: str):
     """Site de agendamento de uma barbearia (o JS lê o slug da URL)."""
     return _serve("index.html")
+
+
+@app.get("/loja/{slug}")
+def store(slug: str):
+    """Loja virtual de uma barbearia (o JS lê o slug da URL)."""
+    return _serve("store.html")

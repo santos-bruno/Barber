@@ -82,3 +82,30 @@ export const deleteTransaction = (id) =>
 export const getHours = () => req('/hours');
 export const updateHour = (weekday, data) =>
   req(`/hours/${weekday}`, { method: 'PUT', body: JSON.stringify(data) });
+
+// ---- Planos de corte (assinatura da barbearia) ----
+export const getPlansCorte = () => req('/subscription-plans');
+export const createPlanCorte = (data) =>
+  req('/subscription-plans', { method: 'POST', body: JSON.stringify(data) });
+export const deletePlanCorte = (id) =>
+  req(`/subscription-plans/${id}`, { method: 'DELETE' });
+export const getClientSubs = (clientId) =>
+  req(`/client-subscriptions${clientId ? `?client_id=${clientId}` : ''}`);
+export const createClientSub = (data) =>
+  req('/client-subscriptions', { method: 'POST', body: JSON.stringify(data) });
+export const cancelClientSub = (id) =>
+  req(`/client-subscriptions/${id}`, { method: 'DELETE' });
+
+// ---- Produtos / estoque / pedidos ----
+export const getProducts = () => req('/products');
+export const createProduct = (data) =>
+  req('/products', { method: 'POST', body: JSON.stringify(data) });
+export const updateProduct = (id, data) =>
+  req(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteProduct = (id) =>
+  req(`/products/${id}`, { method: 'DELETE' });
+export const moveStock = (id, data) =>
+  req(`/products/${id}/stock`, { method: 'POST', body: JSON.stringify(data) });
+export const getOrders = () => req('/orders');
+export const updateOrder = (id, status) =>
+  req(`/orders/${id}?status=${status}`, { method: 'PATCH' });

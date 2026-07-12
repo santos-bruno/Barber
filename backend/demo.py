@@ -101,6 +101,21 @@ def seed_demo() -> None:
         add_appt(client_objs[1], corte, 10, 30, "confirmado")
         add_appt(client_objs[2], barba, 14, 0, "pendente")
 
+        # Produtos da loja
+        for nome, desc, preco, custo, estoque in [
+            ("Pomada Modeladora", "Fixação forte, efeito matte", 30.0, 12.0, 15),
+            ("Óleo para Barba", "Hidrata e amacia", 25.0, 10.0, 10),
+            ("Shampoo Barba & Cabelo", "Limpeza 2 em 1", 20.0, 8.0, 8),
+        ]:
+            db.add(models.Product(tenant_id=tenant.id, name=nome, description=desc,
+                                  price=preco, cost=custo, stock=estoque, sellable_online=True))
+
+        # Plano de assinatura de corte demo
+        db.add(models.SubscriptionPlan(
+            tenant_id=tenant.id, name="Corte Mensal", price=80.0, cuts_per_month=4,
+            allowed_weekdays="0,1,2,3,4", allowed_time_start=time(9, 0), allowed_time_end=time(18, 0),
+        ))
+
         # Caixa (entradas do dia + uma saída)
         db.add(models.Transaction(tenant_id=tenant.id, type="entrada", amount=combo.price,
                                   description=f"{combo.name} - João Silva", category="Serviço", date=hoje))

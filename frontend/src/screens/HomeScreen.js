@@ -121,6 +121,9 @@ export default function HomeScreen({ navigation }) {
         <Tile emoji="👥" label="Clientes" onPress={() => navigation.navigate('Clients')} />
         <Tile emoji="💰" label="Fluxo de caixa" onPress={() => navigation.navigate('CashFlow')} />
         <Tile emoji="🕐" label="Horários" onPress={() => navigation.navigate('Hours')} />
+        <Tile emoji="🎟️" label="Planos de corte" onPress={() => navigation.navigate('Plans')} />
+        <Tile emoji="📦" label="Loja / Estoque" onPress={() => navigation.navigate('Products')} />
+        <Tile emoji="🛒" label="Pedidos" onPress={() => navigation.navigate('Orders')} />
         <Tile emoji="💳" label="Assinatura" onPress={() => navigation.navigate('Subscription')} />
       </View>
 

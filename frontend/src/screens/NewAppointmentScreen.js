@@ -24,6 +24,7 @@ export default function NewAppointmentScreen({ navigation }) {
   const [time, setTime] = useState(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [paymentType, setPaymentType] = useState('avista'); // avista | assinatura
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -59,6 +60,7 @@ export default function NewAppointmentScreen({ navigation }) {
         date: toApiDate(date),
         time: time + ':00',
         source: 'admin',
+        payment_type: paymentType,
       });
       Alert.alert('Pronto!', 'Agendamento criado.', [
         { text: 'OK', onPress: () => navigation.goBack() },
@@ -72,6 +74,19 @@ export default function NewAppointmentScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+      <Text style={styles.label}>Pagamento</Text>
+      <View style={styles.chipRow}>
+        <TouchableOpacity style={[styles.chip, paymentType === 'avista' && styles.chipActive]} onPress={() => setPaymentType('avista')}>
+          <Text style={[styles.chipText, paymentType === 'avista' && styles.chipTextActive]}>À vista</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.chip, paymentType === 'assinatura' && styles.chipActive]} onPress={() => setPaymentType('assinatura')}>
+          <Text style={[styles.chipText, paymentType === 'assinatura' && styles.chipTextActive]}>Assinatura</Text>
+        </TouchableOpacity>
+      </View>
+      {paymentType === 'assinatura' && (
+        <Text style={styles.assinHint}>O cliente precisa ter um plano de corte ativo (Clientes → Assinar). O corte não entra no caixa (já pago na mensalidade).</Text>
+      )}
+
       <Text style={styles.label}>Serviço</Text>
       <View style={styles.chipRow}>
         {services.map((s) => (
@@ -147,6 +162,7 @@ const styles = StyleSheet.create({
   selectorText: { color: COLORS.text, fontSize: 16 },
   input: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 12, color: COLORS.text, fontSize: 16 },
   hint: { color: COLORS.textMuted },
+  assinHint: { color: COLORS.textMuted, fontSize: 12.5, marginTop: 8, lineHeight: 18 },
   save: { backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 26 },
   saveText: { color: '#1a1a1a', fontWeight: '700', fontSize: 16 },
 });
