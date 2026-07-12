@@ -1,0 +1,27 @@
+# Blueprint de deploy no Render (https://render.com) — plano gratuito.
+# Sobe a API + o site de agendamento e um banco PostgreSQL grátis.
+#
+# Como usar:
+#   1. Faça login no Render e clique em "New +" > "Blueprint".
+#   2. Conecte este repositório do GitHub.
+#   3. O Render lê este arquivo, cria o banco e o serviço web automaticamente.
+#   4. Ao final, você recebe uma URL pública (ex: https://barbearia-perison.onrender.com)
+#      — essa é o link de agendamento para o anúncio/clientes.
+services:
+  - type: web
+    name: barbearia-perison
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: barbearia-db
+          property: connectionString
+
+databases:
+  - name: barbearia-db
+    plan: free

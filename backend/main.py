@@ -1,37 +1,36 @@
 """
-API da Barbearia e Belezaria Sr. Perison.
+API + site de agendamento da Barbearia e Belezaria Sr. Perison.
 
-Endpoints:
-    GET  /               -> healthcheck + dados do estabelecimento
-    GET  /services       -> lista de serviços
-    POST /services       -> cria um serviço
-    GET  /appointments   -> lista de agendamentos
-    POST /appointments   -> cria um agendamento
+- API REST: /services, /clients, /appointments, /cashflow, /hours
+- Site público de agendamento servido em "/" (o link para anúncios/clientes)
+- Docs interativas em /docs
 """
-from typing import List
+import os
+from datetime import time
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from fastapi.responses import FileResponse, JSONResponse
 
 import models
-import schemas
-from database import Base, SessionLocal, engine, get_db
+from database import Base, SessionLocal, engine
+from routers import appointments, cashflow, clients, hours, services
 
-# Cria as tabelas no primeiro boot.
 Base.metadata.create_all(bind=engine)
 
-# Dados do estabelecimento (hardcoded, conforme especificação).
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+WEB_DIR = os.path.join(BASE_DIR, "web")
+
 ESTABELECIMENTO = {
     "nome": "Barbearia e Belezaria Sr. Perison",
     "endereco": "Av. Bartolomeu de Gusmão, 857 - Casa E - Aparecida, "
     "Santarém - PA, 68030-350",
     "whatsapp": "(93) 99207-8226",
     "whatsapp_link": "https://wa.me/5593992078226",
+    "whatsapp_number": "5593992078226",
     "desenvolvedor": "Bruno",
 }
 
-# Serviços padrão inseridos no primeiro boot, caso a tabela esteja vazia.
 SERVICOS_PADRAO = [
     {"name": "Corte de Cabelo", "description": "Corte masculino tradicional ou moderno",
      "price": 35.0, "duration_minutes": 30},
@@ -46,25 +45,37 @@ SERVICOS_PADRAO = [
 ]
 
 
-def seed_services() -> None:
-    """Popula os serviços padrão se ainda não houver nenhum cadastrado."""
+def seed() -> None:
+    """Popula serviços e horários padrão no primeiro boot."""
     db = SessionLocal()
     try:
         if db.query(models.Service).count() == 0:
             for s in SERVICOS_PADRAO:
                 db.add(models.Service(**s))
-            db.commit()
+
+        if db.query(models.BusinessHour).count() == 0:
+            for weekday in range(7):
+                is_open = weekday != 6  # fecha aos domingos
+                db.add(
+                    models.BusinessHour(
+                        weekday=weekday,
+                        is_open=is_open,
+                        open_time=time(9, 0) if is_open else None,
+                        close_time=time(19, 0) if is_open else None,
+                        slot_minutes=30,
+                    )
+                )
+        db.commit()
     finally:
         db.close()
 
 
 app = FastAPI(
-    title="API - Barbearia e Belezaria Sr. Perison",
-    description="Back-end de agendamentos da barbearia.",
-    version="1.0.0",
+    title="Barbearia e Belezaria Sr. Perison",
+    description="API e site de agendamentos.",
+    version="2.0.0",
 )
 
-# CORS liberado para o app mobile (Expo) consumir a API.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -73,45 +84,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(services.router)
+app.include_router(clients.router)
+app.include_router(appointments.router)
+app.include_router(cashflow.router)
+app.include_router(hours.router)
+
 
 @app.on_event("startup")
 def on_startup() -> None:
-    seed_services()
+    seed()
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.get("/info")
+def info():
+    return {"estabelecimento": ESTABELECIMENTO}
 
 
 @app.get("/")
-def root():
-    """Healthcheck + dados do estabelecimento."""
-    return {"status": "ok", "estabelecimento": ESTABELECIMENTO}
-
-
-# ---------- Services ----------
-@app.get("/services", response_model=List[schemas.ServiceOut])
-def list_services(db: Session = Depends(get_db)):
-    return db.query(models.Service).all()
-
-
-@app.post("/services", response_model=schemas.ServiceOut, status_code=201)
-def create_service(payload: schemas.ServiceCreate, db: Session = Depends(get_db)):
-    service = models.Service(**payload.model_dump())
-    db.add(service)
-    db.commit()
-    db.refresh(service)
-    return service
-
-
-# ---------- Appointments ----------
-@app.get("/appointments", response_model=List[schemas.AppointmentOut])
-def list_appointments(db: Session = Depends(get_db)):
-    return db.query(models.Appointment).order_by(models.Appointment.created_at.desc()).all()
-
-
-@app.post("/appointments", response_model=schemas.AppointmentOut, status_code=201)
-def create_appointment(payload: schemas.AppointmentCreate, db: Session = Depends(get_db)):
-    if not payload.customer_name.strip():
-        raise HTTPException(status_code=400, detail="Nome do cliente é obrigatório.")
-    appointment = models.Appointment(**payload.model_dump())
-    db.add(appointment)
-    db.commit()
-    db.refresh(appointment)
-    return appointment
+def booking_site():
+    """Serve o site de agendamento (link público)."""
+    index = os.path.join(WEB_DIR, "index.html")
+    if os.path.exists(index):
+        return FileResponse(index)
+    return JSONResponse({"status": "ok", "estabelecimento": ESTABELECIMENTO})
