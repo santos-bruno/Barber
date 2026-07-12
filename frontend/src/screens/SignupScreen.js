@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -8,21 +7,18 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { register } from '../api/client';
-import { COLORS } from '../constants/business';
+import GradientButton from '../components/GradientButton';
+import { COLORS, SHADOW } from '../constants/business';
 import { useAuth } from '../context/AuthContext';
 
 export default function SignupScreen({ navigation }) {
   const { signIn } = useAuth();
   const [form, setForm] = useState({
-    barbershop_name: '',
-    owner_name: '',
-    email: '',
-    password: '',
-    whatsapp: '',
-    address: '',
+    barbershop_name: '', owner_name: '', email: '', password: '', whatsapp: '', address: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -50,40 +46,34 @@ export default function SignupScreen({ navigation }) {
     }
   };
 
-  const Field = ({ label, k, ...props }) => (
-    <>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={styles.input}
-        placeholderTextColor={COLORS.textMuted}
-        value={form[k]}
-        onChangeText={set(k)}
-        {...props}
-      />
-    </>
-  );
-
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: COLORS.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.title}>Criar conta grátis</Text>
-        <Text style={styles.subtitle}>Teste o sistema sem compromisso</Text>
+        <Text style={styles.subtitle}>Teste o sistema sem compromisso · sem cartão</Text>
 
-        <Field label="Nome da barbearia *" k="barbershop_name" />
-        <Field label="Seu nome *" k="owner_name" />
-        <Field label="E-mail *" k="email" autoCapitalize="none" keyboardType="email-address" />
-        <Field label="Senha (mín. 6) *" k="password" secureTextEntry />
-        <Field label="WhatsApp (com DDD)" k="whatsapp" keyboardType="phone-pad" />
-        <Field label="Endereço" k="address" />
+        <View style={styles.card}>
+          <Text style={styles.label}>Nome da barbearia *</Text>
+          <TextInput style={styles.input} placeholderTextColor={COLORS.textMuted} value={form.barbershop_name} onChangeText={set('barbershop_name')} />
+          <Text style={styles.label}>Seu nome *</Text>
+          <TextInput style={styles.input} placeholderTextColor={COLORS.textMuted} value={form.owner_name} onChangeText={set('owner_name')} />
+          <Text style={styles.label}>E-mail *</Text>
+          <TextInput style={styles.input} placeholderTextColor={COLORS.textMuted} autoCapitalize="none" keyboardType="email-address" value={form.email} onChangeText={set('email')} />
+          <Text style={styles.label}>Senha (mín. 6) *</Text>
+          <TextInput style={styles.input} placeholderTextColor={COLORS.textMuted} secureTextEntry value={form.password} onChangeText={set('password')} />
+          <Text style={styles.label}>WhatsApp (com DDD)</Text>
+          <TextInput style={styles.input} placeholderTextColor={COLORS.textMuted} keyboardType="phone-pad" value={form.whatsapp} onChangeText={set('whatsapp')} />
+          <Text style={styles.label}>Endereço</Text>
+          <TextInput style={styles.input} placeholderTextColor={COLORS.textMuted} value={form.address} onChangeText={set('address')} />
 
-        {!!error && <Text style={styles.error}>{error}</Text>}
+          {!!error && <Text style={styles.error}>{error}</Text>}
 
-        <TouchableOpacity style={styles.btn} onPress={submit} disabled={loading}>
-          {loading ? <ActivityIndicator color="#1a1a1a" /> : <Text style={styles.btnText}>Criar conta</Text>}
-        </TouchableOpacity>
+          <GradientButton title="Criar conta" onPress={submit} loading={loading} style={{ marginTop: 20 }} />
+        </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.link}>Já tem conta? <Text style={styles.linkStrong}>Entrar</Text></Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.row}>
+          <Text style={styles.link}>Já tem conta? </Text>
+          <Text style={styles.linkStrong}>Entrar</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -92,14 +82,14 @@ export default function SignupScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  content: { padding: 24, paddingTop: 30, paddingBottom: 50 },
-  title: { color: COLORS.text, fontSize: 24, fontWeight: '800', textAlign: 'center' },
-  subtitle: { color: COLORS.textMuted, textAlign: 'center', marginBottom: 20, marginTop: 4 },
-  label: { color: COLORS.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginTop: 12, marginBottom: 6 },
-  input: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 13, color: COLORS.text, fontSize: 16 },
-  error: { color: '#ff6b6b', marginTop: 14 },
-  btn: { backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 22 },
-  btnText: { color: '#1a1a1a', fontWeight: '700', fontSize: 16 },
-  link: { color: COLORS.textMuted, textAlign: 'center', marginTop: 18 },
-  linkStrong: { color: COLORS.primary, fontWeight: '700' },
+  content: { padding: 20, paddingTop: 36, paddingBottom: 50 },
+  title: { color: COLORS.text, fontSize: 26, fontWeight: '800', textAlign: 'center' },
+  subtitle: { color: COLORS.textMuted, textAlign: 'center', marginBottom: 20, marginTop: 6 },
+  card: { backgroundColor: COLORS.surface, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: COLORS.border, ...SHADOW },
+  label: { color: COLORS.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 12, marginBottom: 6 },
+  input: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border, borderRadius: 14, padding: 14, color: COLORS.text, fontSize: 16 },
+  error: { color: COLORS.danger, marginTop: 14 },
+  row: { flexDirection: 'row', justifyContent: 'center', marginTop: 18 },
+  link: { color: COLORS.textMuted },
+  linkStrong: { color: COLORS.primary, fontWeight: '800' },
 });

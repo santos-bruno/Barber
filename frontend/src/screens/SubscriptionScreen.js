@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -12,7 +13,8 @@ import {
 } from 'react-native';
 
 import { getPlans, subscribe } from '../api/client';
-import { COLORS } from '../constants/business';
+import GradientButton from '../components/GradientButton';
+import { COLORS, GRADIENTS, SHADOW } from '../constants/business';
 import { useAuth } from '../context/AuthContext';
 import { apiToBR, money } from '../utils/date';
 
@@ -32,10 +34,7 @@ export default function SubscriptionScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    getPlans()
-      .then((d) => setPlans(d.plans || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    getPlans().then((d) => setPlans(d.plans || [])).catch(() => {}).finally(() => setLoading(false));
     refreshTenant();
   }, []);
 
@@ -47,11 +46,8 @@ export default function SubscriptionScreen() {
     setSubmitting(true);
     try {
       const res = await subscribe({ plan: selected, cpf_cnpj: doc.replace(/\D/g, ''), billing_type: 'CREDIT_CARD' });
-      if (res.checkout_url) {
-        Linking.openURL(res.checkout_url);
-      } else {
-        Alert.alert('Assinatura criada', 'Verifique seu e-mail para concluir o pagamento.');
-      }
+      if (res.checkout_url) Linking.openURL(res.checkout_url);
+      else Alert.alert('Assinatura criada', 'Verifique seu e-mail para concluir o pagamento.');
       refreshTenant();
     } catch (e) {
       Alert.alert('Erro', e.message);
@@ -60,13 +56,11 @@ export default function SubscriptionScreen() {
     }
   };
 
-  const dateInfo = tenant?.subscription_status === 'active'
-    ? tenant?.current_period_end
-    : tenant?.trial_ends_at;
+  const dateInfo = tenant?.subscription_status === 'active' ? tenant?.current_period_end : tenant?.trial_ends_at;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-      <View style={styles.statusCard}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <LinearGradient colors={GRADIENTS.header} style={[styles.statusCard, SHADOW]}>
         <Text style={styles.statusLabel}>Status da assinatura</Text>
         <Text style={styles.statusValue}>{STATUS_LABEL[tenant?.subscription_status] || '—'}</Text>
         {!!dateInfo && (
@@ -75,62 +69,62 @@ export default function SubscriptionScreen() {
             {apiToBR(String(dateInfo).slice(0, 10))}
           </Text>
         )}
-      </View>
+      </LinearGradient>
 
       <Text style={styles.sectionTitle}>Escolha seu plano</Text>
       {loading ? (
         <ActivityIndicator color={COLORS.primary} style={{ marginTop: 20 }} />
       ) : (
-        plans.map((p) => (
-          <TouchableOpacity
-            key={p.id}
-            style={[styles.plan, selected === p.id && styles.planActive]}
-            onPress={() => setSelected(p.id)}
-          >
-            <View>
-              <Text style={styles.planName}>{p.label}</Text>
-              <Text style={styles.planCycle}>{p.id === 'anual' ? 'por ano' : 'por mês'}</Text>
-            </View>
-            <Text style={styles.planPrice}>{money(p.price)}</Text>
-          </TouchableOpacity>
-        ))
+        plans.map((p) => {
+          const isSel = selected === p.id;
+          const isYear = p.id === 'anual';
+          return (
+            <TouchableOpacity key={p.id} activeOpacity={0.85} style={[styles.plan, isSel && styles.planActive]} onPress={() => setSelected(p.id)}>
+              <View style={styles.radioWrap}>
+                <View style={[styles.radio, isSel && styles.radioOn]}>{isSel && <View style={styles.radioDot} />}</View>
+                <View>
+                  <View style={styles.planNameRow}>
+                    <Text style={styles.planName}>{p.label}</Text>
+                    {isYear && <View style={styles.tag}><Text style={styles.tagText}>MELHOR VALOR</Text></View>}
+                  </View>
+                  <Text style={styles.planCycle}>{isYear ? 'cobrança anual' : 'cobrança mensal'}</Text>
+                </View>
+              </View>
+              <Text style={styles.planPrice}>{money(p.price)}</Text>
+            </TouchableOpacity>
+          );
+        })
       )}
 
       <Text style={styles.label}>CPF ou CNPJ (para a cobrança)</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Somente números"
-        placeholderTextColor={COLORS.textMuted}
-        keyboardType="number-pad"
-        value={doc}
-        onChangeText={setDoc}
-      />
+      <TextInput style={styles.input} placeholder="Somente números" placeholderTextColor={COLORS.textMuted} keyboardType="number-pad" value={doc} onChangeText={setDoc} />
 
-      <TouchableOpacity style={styles.btn} onPress={doSubscribe} disabled={submitting}>
-        {submitting ? <ActivityIndicator color="#1a1a1a" /> : <Text style={styles.btnText}>Ir para o pagamento</Text>}
-      </TouchableOpacity>
-      <Text style={styles.hint}>
-        Você será direcionado a um ambiente seguro (Asaas) para inserir os dados do cartão.
-      </Text>
+      <GradientButton title="Ir para o pagamento" onPress={doSubscribe} loading={submitting} style={{ marginTop: 20 }} />
+      <Text style={styles.hint}>🔒 Ambiente seguro (Asaas) para inserir os dados do cartão.</Text>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  statusCard: { backgroundColor: COLORS.surface, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: COLORS.primary, alignItems: 'center' },
-  statusLabel: { color: COLORS.textMuted, fontSize: 12, textTransform: 'uppercase', fontWeight: '700' },
-  statusValue: { color: COLORS.primary, fontSize: 22, fontWeight: '800', marginTop: 4 },
+  statusCard: { borderRadius: 20, padding: 22, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
+  statusLabel: { color: COLORS.textMuted, fontSize: 12, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 0.5 },
+  statusValue: { color: COLORS.primary, fontSize: 24, fontWeight: '800', marginTop: 6 },
   statusDate: { color: COLORS.textMuted, marginTop: 4 },
-  sectionTitle: { color: COLORS.text, fontSize: 16, fontWeight: '700', marginTop: 24, marginBottom: 12 },
-  plan: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: COLORS.surface, borderWidth: 2, borderColor: COLORS.border, borderRadius: 12, padding: 16, marginBottom: 12 },
-  planActive: { borderColor: COLORS.primary, backgroundColor: '#33301f' },
-  planName: { color: COLORS.text, fontSize: 17, fontWeight: '700' },
+  sectionTitle: { color: COLORS.text, fontSize: 17, fontWeight: '800', marginTop: 26, marginBottom: 14 },
+  plan: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: COLORS.surface, borderWidth: 1.5, borderColor: COLORS.border, borderRadius: 18, padding: 16, marginBottom: 12 },
+  planActive: { borderColor: COLORS.primary, backgroundColor: 'rgba(240,194,75,0.08)' },
+  radioWrap: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },
+  radioOn: { borderColor: COLORS.primary },
+  radioDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: COLORS.primary },
+  planNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  planName: { color: COLORS.text, fontSize: 17, fontWeight: '800' },
+  tag: { backgroundColor: COLORS.primary, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  tagText: { color: COLORS.onPrimary, fontSize: 9, fontWeight: '800' },
   planCycle: { color: COLORS.textMuted, fontSize: 13, marginTop: 2 },
   planPrice: { color: COLORS.primary, fontSize: 20, fontWeight: '800' },
-  label: { color: COLORS.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginTop: 12, marginBottom: 6 },
-  input: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 13, color: COLORS.text, fontSize: 16 },
-  btn: { backgroundColor: COLORS.primary, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 20 },
-  btnText: { color: '#1a1a1a', fontWeight: '700', fontSize: 16 },
+  label: { color: COLORS.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 14, marginBottom: 7 },
+  input: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border, borderRadius: 14, padding: 15, color: COLORS.text, fontSize: 16 },
   hint: { color: COLORS.textMuted, fontSize: 12, marginTop: 12, textAlign: 'center' },
 });
