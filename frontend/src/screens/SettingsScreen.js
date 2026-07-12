@@ -1,0 +1,102 @@
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
+import { getInfo } from '../api/client';
+import { getApiUrl, setApiUrl } from '../config';
+import { BUSINESS, COLORS } from '../constants/business';
+
+export default function SettingsScreen() {
+  const [url, setUrl] = useState('');
+  const [testing, setTesting] = useState(false);
+  const [status, setStatus] = useState(null); // 'ok' | 'fail'
+
+  useEffect(() => {
+    getApiUrl().then(setUrl);
+  }, []);
+
+  const save = async () => {
+    await setApiUrl(url);
+    Alert.alert('Salvo', 'Endereço do servidor atualizado.');
+  };
+
+  const test = async () => {
+    setTesting(true);
+    setStatus(null);
+    try {
+      await setApiUrl(url);
+      const info = await getInfo();
+      setStatus('ok');
+      Alert.alert('Conectado!', info?.estabelecimento?.nome || 'Servidor respondendo.');
+    } catch (e) {
+      setStatus('fail');
+      Alert.alert('Falha', 'Não foi possível conectar. Verifique a URL.');
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
+      <Text style={styles.label}>Endereço do servidor (backend)</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="https://barbearia-perison.onrender.com"
+        placeholderTextColor={COLORS.textMuted}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="url"
+        value={url}
+        onChangeText={setUrl}
+      />
+      <Text style={styles.hint}>
+        Cole aqui a URL que o Render gerou após o deploy do backend. É a mesma
+        URL do link de agendamento dos clientes.
+      </Text>
+
+      <View style={styles.row}>
+        <TouchableOpacity style={[styles.btn, styles.outline]} onPress={test} disabled={testing}>
+          {testing ? <ActivityIndicator color={COLORS.primary} /> : <Text style={[styles.btnText, { color: COLORS.primary }]}>Testar conexão</Text>}
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.btn} onPress={save}>
+          <Text style={[styles.btnText, { color: '#1a1a1a' }]}>Salvar</Text>
+        </TouchableOpacity>
+      </View>
+
+      {status === 'ok' && <Text style={styles.ok}>✓ Conectado</Text>}
+      {status === 'fail' && <Text style={styles.fail}>✕ Sem conexão</Text>}
+
+      <View style={styles.info}>
+        <Text style={styles.infoTitle}>{BUSINESS.name}</Text>
+        <Text style={styles.infoText}>{BUSINESS.address}</Text>
+        <Text style={styles.infoText}>WhatsApp: {BUSINESS.whatsappDisplay}</Text>
+        <Text style={styles.infoDev}>Desenvolvido por {BUSINESS.developer}</Text>
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.background },
+  label: { color: COLORS.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginBottom: 8 },
+  input: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 14, color: COLORS.text, fontSize: 15 },
+  hint: { color: COLORS.textMuted, fontSize: 13, marginTop: 8, lineHeight: 19 },
+  row: { flexDirection: 'row', gap: 12, marginTop: 18 },
+  btn: { flex: 1, backgroundColor: COLORS.primary, borderRadius: 10, padding: 14, alignItems: 'center' },
+  outline: { backgroundColor: 'transparent', borderWidth: 2, borderColor: COLORS.primary },
+  btnText: { fontWeight: '700' },
+  ok: { color: COLORS.whatsapp, textAlign: 'center', marginTop: 14, fontWeight: '700' },
+  fail: { color: '#ff6b6b', textAlign: 'center', marginTop: 14, fontWeight: '700' },
+  info: { marginTop: 34, padding: 16, backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
+  infoTitle: { color: COLORS.text, fontWeight: '700', fontSize: 16 },
+  infoText: { color: COLORS.textMuted, marginTop: 6, lineHeight: 20 },
+  infoDev: { color: COLORS.primary, marginTop: 12, fontSize: 13 },
+});
