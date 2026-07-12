@@ -14,6 +14,10 @@ jobs:
     name: Build APK (Expo prebuild + Gradle)
     runs-on: ubuntu-latest
 
+    # Necessário para publicar o APK em uma Release.
+    permissions:
+      contents: write
+
     defaults:
       run:
         working-directory: frontend
@@ -53,11 +57,32 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleRelease --no-daemon
 
-      # 6. Publica o APK como Artifact do GitHub para download
-      - name: Upload do APK
+      # 6. Renomeia o APK para um nome amigável
+      - name: Renomear APK
+        working-directory: frontend/android/app/build/outputs/apk/release
+        run: |
+          SRC=$(ls *.apk | head -n1)
+          cp "$SRC" "barbearia-sr-perison.apk"
+          ls -la
+
+      # 7. Publica o APK como Artifact do GitHub (download via aba Actions)
+      - name: Upload do APK (Artifact)
         uses: actions/upload-artifact@v4
         with:
           name: barbearia-sr-perison-apk
-          path: frontend/android/app/build/outputs/apk/release/*.apk
+          path: frontend/android/app/build/outputs/apk/release/barbearia-sr-perison.apk
           if-no-files-found: error
           retention-days: 30
+
+      # 8. Publica o APK em uma Release (link de download direto, sem login)
+      - name: Publicar APK em Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: APK - Barbearia Sr. Perison (build mais recente)
+          body: |
+            APK gerado automaticamente pela pipeline (Expo prebuild + Gradle).
+            Assinado com a chave de debug — instalável diretamente no Android
+            (ative "Instalar apps de fontes desconhecidas").
+          files: frontend/android/app/build/outputs/apk/release/barbearia-sr-perison.apk
+          fail_on_unmatched_files: true
