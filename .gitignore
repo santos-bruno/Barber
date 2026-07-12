@@ -1,0 +1,37 @@
+# ---------- Node / Expo (frontend) ----------
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+*.log
+npm-debug.*
+yarn-error.*
+
+# Pastas nativas geradas por `expo prebuild`
+frontend/android/
+frontend/ios/
+
+# ---------- Python (backend) ----------
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Banco SQLite local
+*.db
+barbearia.db
+
+# ---------- Ambiente / segredos ----------
+.env
+.env.*
+!.env.example
+
+# ---------- Sistema / IDE ----------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.keystore

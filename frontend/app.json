@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Sr. Perison",
+    "slug": "barbearia-sr-perison",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a1a"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.srperison.barbearia"
+    },
+    "android": {
+      "package": "com.srperison.barbearia",
+      "versionCode": 1
+    },
+    "web": {}
+  }
+}
