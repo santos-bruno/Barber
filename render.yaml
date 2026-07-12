@@ -13,6 +13,8 @@ services:
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"              # fixa Python 3.12 (wheels disponíveis p/ as libs)
       - key: DATABASE_URL
         fromDatabase:
           name: agenda-barber-db
