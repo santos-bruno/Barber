@@ -51,7 +51,7 @@ export default function SettingsScreen() {
       <Text style={styles.label}>Endereço do servidor (backend)</Text>
       <TextInput
         style={styles.input}
-        placeholder="https://barbearia-perison.onrender.com"
+        placeholder="https://agenda-barber-o0to.onrender.com"
         placeholderTextColor={COLORS.textMuted}
         autoCapitalize="none"
         autoCorrect={false}

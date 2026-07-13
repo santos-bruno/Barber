@@ -82,6 +82,12 @@ def subscribe(
 @router.post("/webhook")
 async def asaas_webhook(request: Request, db: Session = Depends(get_db)):
     """Recebe eventos do Asaas e atualiza o status da assinatura."""
+    # Fail-closed: se a cobrança está ativa, o webhook DEVE ter token configurado.
+    if asaas.is_configured() and not ASAAS_WEBHOOK_TOKEN:
+        raise HTTPException(
+            status_code=503,
+            detail="Webhook sem token de segurança. Defina ASAAS_WEBHOOK_TOKEN.",
+        )
     if ASAAS_WEBHOOK_TOKEN:
         token = request.headers.get("asaas-access-token", "")
         if token != ASAAS_WEBHOOK_TOKEN:

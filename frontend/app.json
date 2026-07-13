@@ -1,23 +1,31 @@
 {
   "expo": {
-    "name": "Sr. Perison",
-    "slug": "barbearia-sr-perison",
+    "name": "Agenda Barber",
+    "slug": "agenda-barber",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
     "splash": {
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1a1a1a"
+      "backgroundColor": "#0F1115"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.srperison.barbearia"
+      "bundleIdentifier": "com.agendabarber.app"
     },
     "android": {
-      "package": "com.srperison.barbearia",
-      "versionCode": 1
+      "package": "com.agendabarber.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F1115"
+      }
     },
-    "web": {}
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
   }
 }

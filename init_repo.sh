@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # init_repo.sh
-# Inicializa o repositório Git do projeto da Barbearia Sr. Perison.
+# Inicializa o repositório Git do projeto Agenda Barber.
 #
 # Uso:
 #   chmod +x init_repo.sh

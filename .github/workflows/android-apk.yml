@@ -69,15 +69,15 @@ jobs:
         working-directory: frontend/android/app/build/outputs/apk/release
         run: |
           SRC=$(ls *.apk | head -n1)
-          cp "$SRC" "barbearia-sr-perison.apk"
+          cp "$SRC" "agenda-barber.apk"
           ls -la
 
       # 7. Publica o APK como Artifact do GitHub (download via aba Actions)
       - name: Upload do APK (Artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: barbearia-sr-perison-apk
-          path: frontend/android/app/build/outputs/apk/release/barbearia-sr-perison.apk
+          name: agenda-barber-apk
+          path: frontend/android/app/build/outputs/apk/release/agenda-barber.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -86,7 +86,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
-          name: APK - Barbearia Sr. Perison (build mais recente)
+          name: Agenda Barber - APK (build mais recente)
           body: |
             APK gerado automaticamente pela pipeline (Expo prebuild + Gradle).
             Assinado com a chave de debug — instalável diretamente no Android

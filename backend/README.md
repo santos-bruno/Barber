@@ -1,4 +1,4 @@
-# Back-end + Site — Barbearia e Belezaria Sr. Perison
+# Back-end + Site — Agenda Barber
 
 API em **FastAPI** com o **site público de agendamento** e banco
 **PostgreSQL** (produção) / **SQLite** (local).
@@ -38,7 +38,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 3. O Render lê o `render.yaml` da raiz, cria o **PostgreSQL grátis** e o
    **web service** automaticamente.
 4. No fim você recebe uma URL pública, ex.:
-   `https://barbearia-perison.onrender.com`
+   `https://agenda-barber-o0to.onrender.com`
    - Essa URL é o **link de agendamento** para colocar no anúncio.
    - Aponte o app admin para ela via `EXPO_PUBLIC_API_URL`.
 

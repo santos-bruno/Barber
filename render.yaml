@@ -34,7 +34,7 @@ services:
       - key: ASAAS_API_KEY
         sync: false                  # cole sua chave do Asaas no painel
       - key: ASAAS_WEBHOOK_TOKEN
-        sync: false                  # (opcional) token p/ validar o webhook
+        generateValue: true          # token gerado p/ validar o webhook (copie p/ o painel Asaas)
       - key: SUPERADMIN_KEY
         sync: false                  # chave do seu painel de assinantes
 
