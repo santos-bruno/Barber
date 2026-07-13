@@ -91,5 +91,5 @@ jobs:
             APK gerado automaticamente pela pipeline (Expo prebuild + Gradle).
             Assinado com a chave de debug — instalável diretamente no Android
             (ative "Instalar apps de fontes desconhecidas").
-          files: frontend/android/app/build/outputs/apk/release/barbearia-sr-perison.apk
+          files: frontend/android/app/build/outputs/apk/release/agenda-barber.apk
           fail_on_unmatched_files: true
