@@ -102,6 +102,9 @@ export const createStaff = (data) =>
   req('/staff', { method: 'POST', body: JSON.stringify(data) });
 export const deleteStaff = (id) =>
   req(`/staff/${id}`, { method: 'DELETE' });
+export const getBarberHours = (id) => req(`/staff/${id}/hours`);
+export const setBarberHour = (id, weekday, data) =>
+  req(`/staff/${id}/hours/${weekday}`, { method: 'PUT', body: JSON.stringify(data) });
 
 // ---- Produtos / estoque / pedidos ----
 export const getProducts = () => req('/products');

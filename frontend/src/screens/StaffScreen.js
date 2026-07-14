@@ -15,7 +15,7 @@ import { createStaff, deleteStaff, getStaff } from '../api/client';
 import GradientButton from '../components/GradientButton';
 import { COLORS } from '../constants/business';
 
-export default function StaffScreen() {
+export default function StaffScreen({ navigation }) {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(false);
@@ -53,6 +53,9 @@ export default function StaffScreen() {
         <Text style={styles.name}>{item.name}</Text>
         <Text style={styles.email}>{item.email}</Text>
       </View>
+      <TouchableOpacity style={styles.hoursBtn} onPress={() => navigation.navigate('BarberHours', { barberId: item.id, barberName: item.name })}>
+        <Text style={styles.hoursText}>Horários</Text>
+      </TouchableOpacity>
       <TouchableOpacity onPress={() => remove(item)}><Text style={styles.remove}>Desativar</Text></TouchableOpacity>
     </View>
   );
@@ -97,6 +100,8 @@ const styles = StyleSheet.create({
   name: { color: COLORS.text, fontSize: 16, fontWeight: '700' },
   email: { color: COLORS.textMuted, fontSize: 13, marginTop: 2 },
   remove: { color: COLORS.danger, fontWeight: '700' },
+  hoursBtn: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.info, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, marginRight: 8 },
+  hoursText: { color: COLORS.info, fontWeight: '700', fontSize: 13 },
   empty: { color: COLORS.textMuted, textAlign: 'center', marginTop: 40 },
   fab: { position: 'absolute', right: 20, bottom: 24, backgroundColor: COLORS.primary, width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', elevation: 4 },
   fabText: { color: COLORS.onPrimary, fontSize: 30, fontWeight: '700', marginTop: -2 },

@@ -225,3 +225,17 @@ class BusinessHour(Base):
     open_time = Column(Time, nullable=True)
     close_time = Column(Time, nullable=True)
     slot_minutes = Column(Integer, default=30)
+
+
+class BarberHour(Base):
+    """Horário de trabalho individual de um barbeiro (sobrepõe o da barbearia)."""
+
+    __tablename__ = "barber_hours"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    barber_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    weekday = Column(Integer, nullable=False)  # 0..6
+    is_open = Column(Boolean, default=True)
+    open_time = Column(Time, nullable=True)
+    close_time = Column(Time, nullable=True)

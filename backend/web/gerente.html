@@ -250,12 +250,33 @@
       $('view').innerHTML=`<h2>Barbeiros</h2><p class="muted" style="margin-bottom:12px">Cada barbeiro entra com o próprio login e vê apenas os atendimentos dele.</p>
         <div class="card"><div class="grid2"><input id="bb-name" placeholder="Nome"/><input id="bb-email" placeholder="E-mail (login)"/></div>
         <input id="bb-pass" type="password" placeholder="Senha (mín. 6)" style="margin-top:10px"/><button class="gold small" style="margin-top:10px" onclick="addBarber()">Criar acesso</button><div class="err" id="bb-err"></div></div>
+        <div id="bh-editor"></div>
         <div id="bb-list"></div>`;
       loadBarbeiros();
     }
     async function loadBarbeiros(){
       const list=await api('/staff');
-      $('bb-list').innerHTML = list.length? list.map(b=>`<div class="item between"><div><strong>✂️ ${b.name}</strong><div class="muted">${b.email}</div></div><button class="chip c-red" onclick="delBarber(${b.id},'${b.name.replace(/'/g,'')}')">Desativar</button></div>`).join('') : '<p class="muted" style="margin-top:12px">Nenhum barbeiro. Crie o primeiro acima.</p>';
+      $('bb-list').innerHTML = list.length? list.map(b=>`<div class="item between"><div><strong>✂️ ${b.name}</strong><div class="muted">${b.email}</div></div><div><button class="chip c-blue" onclick="openBH(${b.id},'${b.name.replace(/'/g,'')}')">Horários</button><button class="chip c-red" onclick="delBarber(${b.id},'${b.name.replace(/'/g,'')}')">Desativar</button></div></div>`).join('') : '<p class="muted" style="margin-top:12px">Nenhum barbeiro. Crie o primeiro acima.</p>';
+    }
+    const _DIAS=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+    async function openBH(id,name){
+      const [bh,shop]=await Promise.all([api('/staff/'+id+'/hours'),api('/hours')]);
+      const byB={}; bh.forEach(h=>byB[h.weekday]=h); const byS={}; shop.forEach(h=>byS[h.weekday]=h);
+      let rows='';
+      for(let w=0;w<7;w++){ const h=byB[w]||byS[w]||{is_open:w!==6,open_time:'09:00:00',close_time:'19:00:00'};
+        rows+=`<div class="item"><div class="between"><strong>${_DIAS[w]}</strong><label class="muted" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="bh-open-${w}" ${h.is_open?'checked':''} style="width:auto"/> trabalha</label></div>
+        <div class="grid2" style="margin-top:8px"><input type="time" id="bh-o-${w}" value="${hhmm(h.open_time)||'09:00'}"/><input type="time" id="bh-c-${w}" value="${hhmm(h.close_time)||'19:00'}"/></div></div>`;
+      }
+      $('bh-editor').innerHTML=`<div class="card" style="border-color:var(--primary)"><div class="between"><strong>Horário de ${name}</strong><button class="chip" style="background:var(--surface2);color:var(--text)" onclick="$('bh-editor').innerHTML=''">Fechar</button></div>
+        <p class="muted" style="font-size:13px;margin:6px 0">Sobrepõe o horário geral da barbearia só para este barbeiro.</p>${rows}
+        <button class="gold small" style="margin-top:10px" onclick="saveBH(${id})">Salvar horário de ${name}</button><div class="ok" id="bh-ok"></div></div>`;
+      $('bh-editor').scrollIntoView({behavior:'smooth'});
+    }
+    async function saveBH(id){
+      try{ for(let w=0;w<7;w++){ const open=$('bh-open-'+w).checked;
+        await api('/staff/'+id+'/hours/'+w,{method:'PUT',body:JSON.stringify({weekday:w,is_open:open,open_time:open?$('bh-o-'+w).value+':00':null,close_time:open?$('bh-c-'+w).value+':00':null})}); }
+        $('bh-ok').textContent='✓ Horário salvo.';
+      }catch(e){ alert(e.message); }
     }
     async function addBarber(){
       $('bb-err').textContent='';

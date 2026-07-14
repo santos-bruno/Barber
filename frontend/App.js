@@ -7,6 +7,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { COLORS } from './src/constants/business';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import AgendaScreen from './src/screens/AgendaScreen';
+import BarberHoursScreen from './src/screens/BarberHoursScreen';
 import CashFlowScreen from './src/screens/CashFlowScreen';
 import ClientsScreen from './src/screens/ClientsScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -49,6 +50,7 @@ function AppStack() {
       <Stack.Screen name="CashFlow" component={CashFlowScreen} options={{ title: 'Fluxo de Caixa' }} />
       <Stack.Screen name="Hours" component={HoursScreen} options={{ title: 'Horários' }} />
       <Stack.Screen name="Staff" component={StaffScreen} options={{ title: 'Barbeiros' }} />
+      <Stack.Screen name="BarberHours" component={BarberHoursScreen} options={{ title: 'Horário do Barbeiro' }} />
       <Stack.Screen name="Plans" component={PlansScreen} options={{ title: 'Planos de Corte' }} />
       <Stack.Screen name="Products" component={ProductsScreen} options={{ title: 'Loja / Estoque' }} />
       <Stack.Screen name="Orders" component={OrdersScreen} options={{ title: 'Pedidos' }} />

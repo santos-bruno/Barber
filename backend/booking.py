@@ -70,7 +70,7 @@ def compute_availability(
     barber_id: Optional[int] = None,
 ) -> List[str]:
     weekday = date.weekday()  # 0=segunda ... 6=domingo
-    bh = (
+    shop = (
         db.query(models.BusinessHour)
         .filter(
             models.BusinessHour.tenant_id == tenant_id,
@@ -78,10 +78,25 @@ def compute_availability(
         )
         .first()
     )
+    step = (shop.slot_minutes if shop else 30) or 30
+
+    # Horário individual do barbeiro sobrepõe o da barbearia, quando existir.
+    bh = None
+    if barber_id is not None:
+        bh = (
+            db.query(models.BarberHour)
+            .filter(
+                models.BarberHour.tenant_id == tenant_id,
+                models.BarberHour.barber_id == barber_id,
+                models.BarberHour.weekday == weekday,
+            )
+            .first()
+        )
+    if bh is None:
+        bh = shop
     if not bh or not bh.is_open or not bh.open_time or not bh.close_time:
         return []
 
-    step = bh.slot_minutes or 30
     duration = step
     if service_id:
         service = (

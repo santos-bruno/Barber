@@ -73,3 +73,64 @@ def deactivate_staff(
         raise HTTPException(status_code=404, detail="Barbeiro não encontrado.")
     barber.active = False
     db.commit()
+
+
+def _barber_of_tenant(db, tenant_id, barber_id):
+    b = (
+        db.query(models.User)
+        .filter(
+            models.User.id == barber_id,
+            models.User.tenant_id == tenant_id,
+            models.User.role == "barber",
+        )
+        .first()
+    )
+    if not b:
+        raise HTTPException(status_code=404, detail="Barbeiro não encontrado.")
+    return b
+
+
+@router.get("/{barber_id}/hours", response_model=List[schemas.BarberHourOut])
+def barber_hours(
+    barber_id: int,
+    tenant: models.Tenant = Depends(require_active_subscription),
+    db: Session = Depends(get_db),
+):
+    _barber_of_tenant(db, tenant.id, barber_id)
+    return (
+        db.query(models.BarberHour)
+        .filter(models.BarberHour.tenant_id == tenant.id, models.BarberHour.barber_id == barber_id)
+        .order_by(models.BarberHour.weekday)
+        .all()
+    )
+
+
+@router.put("/{barber_id}/hours/{weekday}", response_model=schemas.BarberHourOut)
+def set_barber_hour(
+    barber_id: int,
+    weekday: int,
+    payload: schemas.BarberHourBase,
+    tenant: models.Tenant = Depends(require_active_subscription),
+    db: Session = Depends(get_db),
+):
+    if weekday < 0 or weekday > 6:
+        raise HTTPException(status_code=400, detail="weekday deve ser 0..6.")
+    _barber_of_tenant(db, tenant.id, barber_id)
+    bh = (
+        db.query(models.BarberHour)
+        .filter(
+            models.BarberHour.tenant_id == tenant.id,
+            models.BarberHour.barber_id == barber_id,
+            models.BarberHour.weekday == weekday,
+        )
+        .first()
+    )
+    if not bh:
+        bh = models.BarberHour(tenant_id=tenant.id, barber_id=barber_id, weekday=weekday)
+        db.add(bh)
+    bh.is_open = payload.is_open
+    bh.open_time = payload.open_time
+    bh.close_time = payload.close_time
+    db.commit()
+    db.refresh(bh)
+    return bh

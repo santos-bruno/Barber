@@ -293,6 +293,19 @@ class BusinessHourOut(BusinessHourBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class BarberHourBase(BaseModel):
+    weekday: int
+    is_open: bool = True
+    open_time: Optional[time_type] = None
+    close_time: Optional[time_type] = None
+
+
+class BarberHourOut(BarberHourBase):
+    id: int
+    barber_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
 # ---------- Availability ----------
 class AvailabilityOut(BaseModel):
     date: date_type
