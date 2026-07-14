@@ -109,7 +109,11 @@
       { id:'clientes', label:'Clientes', owner:false },
       { id:'caixa', label:'Fluxo de caixa', owner:true },
       { id:'barbeiros', label:'Barbeiros', owner:true },
+      { id:'planos', label:'Planos de corte', owner:true },
+      { id:'loja', label:'Loja / Estoque', owner:true },
+      { id:'pedidos', label:'Pedidos', owner:true },
       { id:'horarios', label:'Horários', owner:true },
+      { id:'assinatura', label:'Assinatura', owner:true },
     ];
     let current = 'agenda';
 
@@ -124,7 +128,7 @@
     }
     function go(id){ current=id; document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.textContent===TABS.find(t=>t.id===id).label)); render(); }
 
-    function render(){ ({agenda:vAgenda,novo:vNovo,clientes:vClientes,caixa:vCaixa,barbeiros:vBarbeiros,horarios:vHorarios})[current](); }
+    function render(){ ({agenda:vAgenda,novo:vNovo,clientes:vClientes,caixa:vCaixa,barbeiros:vBarbeiros,horarios:vHorarios,planos:vPlanos,loja:vLoja,pedidos:vPedidos,assinatura:vAssinatura})[current](); }
 
     // ---------- AGENDA ----------
     async function vAgenda(){
@@ -279,6 +283,107 @@
         }
         $('h-ok').textContent='✓ Horários salvos.';
       }catch(e){ alert(e.message); }
+    }
+
+    // ---------- PLANOS DE CORTE ----------
+    const WD=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+    async function vPlanos(){
+      $('view').innerHTML=`<h2>Planos de corte (assinatura do cliente)</h2>
+        <div class="card">
+          <strong>Novo plano</strong>
+          <div class="grid2" style="margin-top:10px"><input id="pl-name" placeholder="Nome (ex: Corte Mensal)"/><input id="pl-price" placeholder="Valor/mês" inputmode="decimal"/></div>
+          <div class="grid2" style="margin-top:10px"><input id="pl-cuts" placeholder="Cortes/mês (0=ilimitado)" inputmode="numeric"/><div></div></div>
+          <label class="label">Dias permitidos (vazio = todos)</label>
+          <div class="selrow" id="pl-days">${WD.map((d,i)=>`<label class="pill"><input type="checkbox" value="${i}" style="width:auto;margin-right:6px"/>${d}</label>`).join('')}</div>
+          <label class="label" style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="pl-limit" style="width:auto"/> Limitar horário</label>
+          <div class="grid2"><input type="time" id="pl-start" value="09:00"/><input type="time" id="pl-end" value="12:00"/></div>
+          <button class="gold small" style="margin-top:12px" onclick="addPlan()">Criar plano</button><div class="err" id="pl-err"></div>
+        </div>
+        <div id="pl-list"></div>
+        <div class="card" style="margin-top:14px"><strong>Vincular plano a um cliente</strong>
+          <div class="grid2" style="margin-top:10px"><select id="pl-cli"></select><select id="pl-plan"></select></div>
+          <button class="gold small" style="margin-top:10px" onclick="assignPlan()">Vincular (lança mensalidade no caixa)</button><div class="err" id="pl-aerr"></div>
+        </div>`;
+      loadPlans();
+    }
+    async function loadPlans(){
+      const plans=await api('/subscription-plans');
+      $('pl-list').innerHTML = plans.length? plans.map(p=>`<div class="item between"><div><strong>${p.name}</strong><div class="muted">${p.cuts_per_month?p.cuts_per_month+' cortes/mês':'ilimitado'}${p.allowed_weekdays?' · '+p.allowed_weekdays.split(',').map(d=>WD[+d]).join(','):''}${p.allowed_time_start?' · '+hhmm(p.allowed_time_start)+'–'+hhmm(p.allowed_time_end):''}</div></div><div><span style="color:var(--primary);font-weight:800">${money(p.price)}</span> <button class="chip c-red small" onclick="delPlan(${p.id})">×</button></div></div>`).join('') : '<p class="muted" style="margin-top:10px">Nenhum plano ainda.</p>';
+      const clients=await api('/clients');
+      $('pl-cli').innerHTML = clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('') || '<option value="">(sem clientes)</option>';
+      $('pl-plan').innerHTML = plans.map(p=>`<option value="${p.id}">${p.name} — ${money(p.price)}</option>`).join('') || '<option value="">(sem planos)</option>';
+    }
+    async function addPlan(){
+      $('pl-err').textContent='';
+      const name=$('pl-name').value.trim(), price=parseFloat(($('pl-price').value||'').replace(',','.'));
+      if(!name||!price){$('pl-err').textContent='Informe nome e valor.';return;}
+      const days=[...document.querySelectorAll('#pl-days input:checked')].map(c=>c.value).join(',');
+      const lim=$('pl-limit').checked;
+      try{ await api('/subscription-plans',{method:'POST',body:JSON.stringify({name,price,cuts_per_month:parseInt($('pl-cuts').value||'0',10),allowed_weekdays:days,allowed_time_start:lim?$('pl-start').value+':00':null,allowed_time_end:lim?$('pl-end').value+':00':null})}); loadPlans(); $('pl-name').value='';$('pl-price').value='';$('pl-cuts').value=''; }catch(e){$('pl-err').textContent=e.message;}
+    }
+    async function delPlan(id){ if(!confirm('Excluir plano?'))return; await api('/subscription-plans/'+id,{method:'DELETE'}); loadPlans(); }
+    async function assignPlan(){
+      $('pl-aerr').textContent='';
+      const cid=$('pl-cli').value, pid=$('pl-plan').value;
+      if(!cid||!pid){$('pl-aerr').textContent='Selecione cliente e plano.';return;}
+      try{ await api('/client-subscriptions',{method:'POST',body:JSON.stringify({client_id:+cid,plan_id:+pid})}); $('pl-aerr').style.color='var(--wa)'; $('pl-aerr').textContent='✓ Cliente vinculado ao plano.'; }catch(e){$('pl-aerr').style.color='';$('pl-aerr').textContent=e.message;}
+    }
+
+    // ---------- LOJA / ESTOQUE ----------
+    async function vLoja(){
+      $('view').innerHTML=`<h2>Loja / Estoque</h2>
+        <div class="card"><strong>Novo produto</strong>
+          <div class="grid2" style="margin-top:10px"><input id="pr-name" placeholder="Nome"/><input id="pr-price" placeholder="Preço venda" inputmode="decimal"/></div>
+          <div class="grid2" style="margin-top:10px"><input id="pr-cost" placeholder="Custo" inputmode="decimal"/><input id="pr-stock" placeholder="Estoque inicial" inputmode="numeric"/></div>
+          <label class="label" style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="pr-online" checked style="width:auto"/> Vender na loja virtual</label>
+          <button class="gold small" onclick="addProduct()">Adicionar produto</button><div class="err" id="pr-err"></div>
+        </div>
+        <div id="pr-list"></div>`;
+      loadLoja();
+    }
+    async function loadLoja(){
+      const list=await api('/products');
+      $('pr-list').innerHTML = list.length? list.map(p=>`<div class="item"><div class="between"><div><strong>${p.name}</strong><div class="muted">Venda ${money(p.price)} · Custo ${money(p.cost)}${p.sellable_online?' · 🌐 na loja':''}</div></div><div style="text-align:center"><div style="color:${p.stock<=0?'var(--danger)':'var(--primary)'};font-size:20px;font-weight:800">${p.stock}</div><div class="muted" style="font-size:11px">estoque</div></div></div>
+        <div class="row" style="margin-top:10px;align-items:center"><input id="mv-${p.id}" placeholder="Qtd" inputmode="numeric" style="max-width:90px"/><button class="chip c-green" onclick="mv(${p.id},'entrada')">Entrada (compra)</button><button class="chip c-red" onclick="mv(${p.id},'saida')">Saída (venda)</button></div></div>`).join('') : '<p class="muted" style="margin-top:12px">Nenhum produto.</p>';
+    }
+    async function addProduct(){
+      $('pr-err').textContent='';
+      const name=$('pr-name').value.trim(); if(!name){$('pr-err').textContent='Informe o nome.';return;}
+      try{ await api('/products',{method:'POST',body:JSON.stringify({name,price:parseFloat(($('pr-price').value||'0').replace(',','.'))||0,cost:parseFloat(($('pr-cost').value||'0').replace(',','.'))||0,stock:parseInt($('pr-stock').value||'0',10),sellable_online:$('pr-online').checked})}); loadLoja(); ['pr-name','pr-price','pr-cost','pr-stock'].forEach(i=>$(i).value=''); }catch(e){$('pr-err').textContent=e.message;}
+    }
+    async function mv(id,type){
+      const qty=parseInt($('mv-'+id).value,10); if(!qty||qty<=0){alert('Informe a quantidade.');return;}
+      try{ await api('/products/'+id+'/stock',{method:'POST',body:JSON.stringify({type,qty,affects_cash:true})}); loadLoja(); }catch(e){alert(e.message);}
+    }
+
+    // ---------- PEDIDOS ----------
+    async function vPedidos(){ $('view').innerHTML=`<h2>Pedidos da loja</h2><div id="od-list"></div>`; loadPedidos(); }
+    async function loadPedidos(){
+      const list=await api('/orders');
+      $('od-list').innerHTML = list.length? list.map(o=>`<div class="item"><div class="between"><strong>${o.customer_name}</strong><span class="badge ${o.status==='entregue'?'b-concluido':o.status==='cancelado'?'b-cancelado':'b-confirmado'}">${o.status}</span></div>
+        ${o.items.map(i=>`<div class="muted">• ${i.qty}× ${i.product_name} — ${money(i.price*i.qty)}</div>`).join('')}
+        <div style="color:var(--primary);font-weight:800;margin-top:6px">Total: ${money(o.total)}</div>
+        ${o.status==='novo'?`<div><button class="chip c-green" onclick="setOrder(${o.id},'entregue')">Marcar entregue</button><button class="chip c-red" onclick="setOrder(${o.id},'cancelado')">Cancelar</button></div>`:''}</div>`).join('') : '<p class="muted" style="margin-top:12px">Nenhum pedido ainda.</p>';
+    }
+    async function setOrder(id,status){ await api('/orders/'+id+'?status='+status,{method:'PATCH'}); loadPedidos(); }
+
+    // ---------- ASSINATURA (do SaaS) ----------
+    async function vAssinatura(){
+      const st=await api('/billing/status'); const pl=await api('/billing/plans');
+      const label={trial:'Período de teste',active:'Ativa',overdue:'Pagamento em atraso',canceled:'Cancelada'}[st.subscription_status]||st.subscription_status;
+      const when=st.subscription_status==='active'?st.current_period_end:st.trial_ends_at;
+      $('view').innerHTML=`<h2>Assinatura do sistema</h2>
+        <div class="stat" style="max-width:320px"><div class="n">${label}</div><div class="l">${when?(st.subscription_status==='active'?'renova ':'teste até ')+brDate(String(when).slice(0,10)):''}</div></div>
+        <div class="card" style="margin-top:14px"><strong>Assinar / renovar</strong>
+          <label class="label">Plano</label><select id="as-plan">${pl.plans.map(p=>`<option value="${p.id}">${p.label} — ${money(p.price)}</option>`).join('')}</select>
+          <label class="label">CPF ou CNPJ</label><input id="as-doc" placeholder="Somente números"/>
+          <button class="gold small" style="margin-top:12px" onclick="doSub()">Ir para o pagamento</button><div class="err" id="as-err"></div>
+          ${!pl.asaas_configured?'<div class="muted" style="margin-top:8px;font-size:13px">⚠ Pagamento ainda não configurado no servidor.</div>':''}
+        </div>`;
+    }
+    async function doSub(){
+      $('as-err').textContent='';
+      try{ const r=await api('/billing/subscribe',{method:'POST',body:JSON.stringify({plan:$('as-plan').value,cpf_cnpj:$('as-doc').value.replace(/\D/g,''),billing_type:'CREDIT_CARD'})}); if(r.checkout_url) location.href=r.checkout_url; else {$('as-err').style.color='var(--wa)';$('as-err').textContent='Assinatura criada! Verifique seu e-mail.';} }catch(e){$('as-err').textContent=e.message;}
     }
 
     // init
