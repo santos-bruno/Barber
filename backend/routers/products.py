@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
-from security import require_active_subscription
+from security import require_active_subscription, require_owner
 
-router = APIRouter(tags=["loja"])
+router = APIRouter(tags=["loja"], dependencies=[Depends(require_owner)])
 
 
 # ---------- Produtos ----------

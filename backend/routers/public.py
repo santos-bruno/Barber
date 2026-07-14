@@ -50,15 +50,32 @@ def public_services(slug: str, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/{slug}/barbers")
+def public_barbers(slug: str, db: Session = Depends(get_db)):
+    tenant = _get_tenant(db, slug)
+    barbers = (
+        db.query(models.User)
+        .filter(
+            models.User.tenant_id == tenant.id,
+            models.User.role == "barber",
+            models.User.active.is_(True),
+        )
+        .order_by(models.User.name)
+        .all()
+    )
+    return [{"id": b.id, "name": b.name} for b in barbers]
+
+
 @router.get("/{slug}/availability", response_model=schemas.AvailabilityOut)
 def public_availability(
     slug: str,
     date: date_type = Query(...),
     service_id: Optional[int] = Query(None),
+    barber_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
 ):
     tenant = _get_tenant(db, slug)
-    slots = compute_availability(db, tenant.id, date, service_id)
+    slots = compute_availability(db, tenant.id, date, service_id, barber_id)
     return schemas.AvailabilityOut(date=date, slots=slots)
 
 
@@ -80,6 +97,7 @@ def public_create_appointment(
         source="web",
         notes=payload.notes,
         payment_type="avista",
+        barber_id=payload.barber_id,
     )
 
 

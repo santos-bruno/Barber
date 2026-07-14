@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
-from security import require_active_subscription
+from security import require_active_subscription, require_owner
 
 router = APIRouter(prefix="/hours", tags=["hours"])
 
@@ -30,6 +30,7 @@ def upsert_hour(
     weekday: int,
     payload: schemas.BusinessHourBase,
     tenant: models.Tenant = Depends(require_active_subscription),
+    _owner: models.User = Depends(require_owner),
     db: Session = Depends(get_db),
 ):
     if weekday < 0 or weekday > 6:

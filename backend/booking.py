@@ -63,7 +63,11 @@ def _minutes_to_hhmm(m: int) -> str:
 
 
 def compute_availability(
-    db: Session, tenant_id: int, date: date_type, service_id: Optional[int]
+    db: Session,
+    tenant_id: int,
+    date: date_type,
+    service_id: Optional[int],
+    barber_id: Optional[int] = None,
 ) -> List[str]:
     weekday = date.weekday()  # 0=segunda ... 6=domingo
     bh = (
@@ -91,15 +95,17 @@ def compute_availability(
     open_m = _to_minutes(bh.open_time)
     close_m = _to_minutes(bh.close_time)
 
-    booked = (
+    booked_q = (
         db.query(models.Appointment)
         .filter(
             models.Appointment.tenant_id == tenant_id,
             models.Appointment.date == date,
             models.Appointment.status != "cancelado",
         )
-        .all()
     )
+    if barber_id is not None:
+        booked_q = booked_q.filter(models.Appointment.barber_id == barber_id)
+    booked = booked_q.all()
     busy = [
         (_to_minutes(a.time), _to_minutes(a.time) + (a.duration_minutes or step))
         for a in booked
@@ -132,6 +138,7 @@ def create_appointment_core(
     source: str,
     notes: str = "",
     payment_type: str = "avista",
+    barber_id: Optional[int] = None,
 ) -> models.Appointment:
     if not customer_name.strip():
         raise HTTPException(status_code=400, detail="Nome do cliente é obrigatório.")
@@ -150,17 +157,30 @@ def create_appointment_core(
             duration = service.duration_minutes
             resolved_name = service.name
 
-    conflict = (
+    # Resolve nome do barbeiro (se informado).
+    barber_name = ""
+    if barber_id is not None:
+        barber = (
+            db.query(models.User)
+            .filter(models.User.id == barber_id, models.User.tenant_id == tenant_id)
+            .first()
+        )
+        if not barber:
+            raise HTTPException(status_code=404, detail="Barbeiro não encontrado.")
+        barber_name = barber.name
+
+    # Conflito de horário é por barbeiro (barbeiros diferentes podem atender ao mesmo tempo).
+    conflict_q = (
         db.query(models.Appointment)
         .filter(
             models.Appointment.tenant_id == tenant_id,
             models.Appointment.date == date,
             models.Appointment.time == time_value,
             models.Appointment.status != "cancelado",
+            models.Appointment.barber_id == barber_id,
         )
-        .first()
     )
-    if conflict:
+    if conflict_q.first():
         raise HTTPException(status_code=409, detail="Horário já ocupado.")
 
     client = get_or_create_client(db, tenant_id, customer_name.strip(), phone)
@@ -179,6 +199,8 @@ def create_appointment_core(
         service_id=service_id,
         service_name=resolved_name,
         price=price,
+        barber_id=barber_id,
+        barber_name=barber_name,
         date=date,
         time=time_value,
         duration_minutes=duration,

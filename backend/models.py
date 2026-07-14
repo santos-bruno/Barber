@@ -51,7 +51,8 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
-    role = Column(String, default="owner")  # owner | superadmin
+    role = Column(String, default="owner")  # owner | barber
+    active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     tenant = relationship("Tenant", back_populates="users")
@@ -93,6 +94,8 @@ class Appointment(Base):
     service_id = Column(Integer, ForeignKey("services.id"), nullable=True)
     service_name = Column(String, nullable=False)
     price = Column(Float, default=0.0)
+    barber_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    barber_name = Column(String, default="")
     date = Column(Date, nullable=False, index=True)
     time = Column(Time, nullable=False)
     duration_minutes = Column(Integer, default=30)

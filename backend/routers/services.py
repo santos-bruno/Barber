@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
-from security import require_active_subscription
+from security import require_active_subscription, require_owner
 
 router = APIRouter(prefix="/services", tags=["services"])
 
@@ -28,6 +28,7 @@ def list_services(
 def create_service(
     payload: schemas.ServiceCreate,
     tenant: models.Tenant = Depends(require_active_subscription),
+    _owner: models.User = Depends(require_owner),
     db: Session = Depends(get_db),
 ):
     service = models.Service(tenant_id=tenant.id, **payload.model_dump())
@@ -42,6 +43,7 @@ def update_service(
     service_id: int,
     payload: schemas.ServiceCreate,
     tenant: models.Tenant = Depends(require_active_subscription),
+    _owner: models.User = Depends(require_owner),
     db: Session = Depends(get_db),
 ):
     service = (
@@ -62,6 +64,7 @@ def update_service(
 def delete_service(
     service_id: int,
     tenant: models.Tenant = Depends(require_active_subscription),
+    _owner: models.User = Depends(require_owner),
     db: Session = Depends(get_db),
 ):
     service = (

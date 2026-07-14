@@ -54,6 +54,15 @@ def seed_demo() -> None:
                 role="owner",
             )
         )
+        # Barbeiro de exemplo (login: barbeiro@agendabarber.com / demo123)
+        barber = models.User(
+            tenant_id=tenant.id,
+            name="Barbeiro Carlos",
+            email="barbeiro@agendabarber.com",
+            password_hash=hash_password(DEMO_PASSWORD),
+            role="barber",
+        )
+        db.add(barber)
         seed_tenant_defaults(db, tenant.id)
         db.flush()
 
@@ -76,7 +85,7 @@ def seed_demo() -> None:
         serv = {s.name: s for s in servicos}
         hoje = date.today()
 
-        def add_appt(cli, s, hh, mm, status):
+        def add_appt(cli, s, hh, mm, status, barber_obj=None):
             db.add(
                 models.Appointment(
                     tenant_id=tenant.id,
@@ -86,6 +95,8 @@ def seed_demo() -> None:
                     service_id=s.id,
                     service_name=s.name,
                     price=s.price,
+                    barber_id=barber_obj.id if barber_obj else None,
+                    barber_name=barber_obj.name if barber_obj else "",
                     date=hoje,
                     time=time(hh, mm),
                     duration_minutes=s.duration_minutes,
@@ -97,8 +108,8 @@ def seed_demo() -> None:
         corte = serv.get("Corte de Cabelo") or servicos[0]
         combo = serv.get("Corte + Barba") or servicos[0]
         barba = serv.get("Barba") or servicos[0]
-        add_appt(client_objs[0], combo, 9, 0, "concluido")
-        add_appt(client_objs[1], corte, 10, 30, "confirmado")
+        add_appt(client_objs[0], combo, 9, 0, "concluido", barber)
+        add_appt(client_objs[1], corte, 10, 30, "confirmado", barber)
         add_appt(client_objs[2], barba, 14, 0, "pendente")
 
         # Produtos da loja

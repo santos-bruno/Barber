@@ -9,9 +9,9 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
-from security import require_active_subscription
+from security import require_active_subscription, require_owner
 
-router = APIRouter(prefix="/cashflow", tags=["cashflow"])
+router = APIRouter(prefix="/cashflow", tags=["cashflow"], dependencies=[Depends(require_owner)])
 
 
 def _scoped(db: Session, tenant_id: int, start, end):

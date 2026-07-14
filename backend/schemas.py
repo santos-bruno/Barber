@@ -107,6 +107,7 @@ class AppointmentBase(BaseModel):
     time: time_type
     notes: str = ""
     payment_type: str = "avista"  # avista | assinatura
+    barber_id: Optional[int] = None
 
 
 class AppointmentCreate(AppointmentBase):
@@ -127,7 +128,24 @@ class AppointmentOut(AppointmentBase):
     duration_minutes: int
     status: str
     source: str
+    barber_name: str = ""
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---------- Staff (barbeiros) ----------
+class StaffCreate(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+
+
+class StaffOut(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+    role: str
+    active: bool
     model_config = ConfigDict(from_attributes=True)
 
 

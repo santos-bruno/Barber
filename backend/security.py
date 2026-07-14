@@ -60,6 +60,8 @@ def get_current_user(
     user = db.get(models.User, user_id)
     if not user:
         raise _unauthorized("Usuário não encontrado.")
+    if not user.active:
+        raise _unauthorized("Acesso desativado.")
     return user
 
 
@@ -93,3 +95,13 @@ def require_active_subscription(
             detail="Assinatura inativa. Renove para continuar usando o sistema.",
         )
     return tenant
+
+
+def require_owner(user: models.User = Depends(get_current_user)) -> models.User:
+    """Somente o dono/gerente (não barbeiros) acessa áreas financeiras/gestão."""
+    if user.role != "owner":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito ao dono da barbearia.",
+        )
+    return user

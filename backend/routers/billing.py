@@ -10,7 +10,7 @@ import models
 import schemas
 from database import get_db
 from plans import PLANS, TRIAL_DAYS, get_plan
-from security import get_current_tenant
+from security import get_current_tenant, require_owner
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
@@ -29,7 +29,10 @@ def list_plans():
 
 
 @router.get("/status", response_model=schemas.TenantOut)
-def billing_status(tenant: models.Tenant = Depends(get_current_tenant)):
+def billing_status(
+    tenant: models.Tenant = Depends(get_current_tenant),
+    _owner: models.User = Depends(require_owner),
+):
     return tenant
 
 
@@ -37,6 +40,7 @@ def billing_status(tenant: models.Tenant = Depends(get_current_tenant)):
 def subscribe(
     payload: schemas.SubscribeInput,
     tenant: models.Tenant = Depends(get_current_tenant),
+    _owner: models.User = Depends(require_owner),
     db: Session = Depends(get_db),
 ):
     plan = get_plan(payload.plan)

@@ -82,6 +82,8 @@ def login(payload: schemas.LoginInput, db: Session = Depends(get_db)):
     )
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="E-mail ou senha inválidos.")
+    if not user.active:
+        raise HTTPException(status_code=403, detail="Acesso desativado. Fale com o dono da barbearia.")
     tenant = db.get(models.Tenant, user.tenant_id)
     return schemas.AuthOut(token=create_token(user), user=user, tenant=tenant)
 
