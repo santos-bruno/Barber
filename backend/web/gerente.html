@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerenciar — Agenda Barber</title>
+  <style>
+    :root{--bg:#0F1115;--surface:#171A21;--surface2:#1E222B;--primary:#F0C24B;--gold1:#F6D06B;--gold2:#D99A2B;--text:#F4F6FB;--muted:#9AA3B2;--border:#262B36;--wa:#25D366;--danger:#FF5C5C;--info:#4C8DFF;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;}
+    .wrap{max-width:960px;margin:0 auto;padding:0 16px;}
+    button{border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;}
+    input,select{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px;color:var(--text);font-size:15px;width:100%;}
+    input:focus,select:focus{outline:none;border-color:var(--primary);}
+    .gold{background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#141414;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;}
+    .muted{color:var(--muted);} .err{color:var(--danger);margin-top:8px;} .ok{color:var(--wa);}
+    .label{color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin:12px 0 5px;display:block;}
+    /* login */
+    #login{max-width:400px;margin:60px auto;}
+    .brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:18px;}
+    .mark{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--gold1),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:26px;}
+    .btn-full{width:100%;padding:14px;margin-top:16px;font-size:15px;}
+    /* header */
+    header{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5;}
+    .hbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;max-width:960px;margin:0 auto;}
+    .tabs{display:flex;gap:6px;overflow-x:auto;padding:0 16px 10px;max-width:960px;margin:0 auto;}
+    .tab{background:var(--surface2);color:var(--muted);padding:9px 14px;border-radius:999px;white-space:nowrap;}
+    .tab.active{background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#141414;}
+    .logout{background:none;color:var(--muted);text-decoration:underline;font-weight:400;}
+    main{padding:18px 0 60px;}
+    h2{font-size:20px;margin-bottom:14px;}
+    .row{display:flex;gap:10px;flex-wrap:wrap;}
+    .stat{flex:1;min-width:130px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;}
+    .stat .n{color:var(--primary);font-size:24px;font-weight:800;} .stat .l{color:var(--muted);font-size:12px;}
+    .item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-top:10px;}
+    .item.lft{border-left:4px solid var(--border);}
+    .between{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+    .badge{border-radius:12px;padding:3px 10px;font-size:11px;font-weight:800;text-transform:uppercase;color:#141414;white-space:nowrap;}
+    .b-pendente{background:var(--primary);} .b-confirmado{background:var(--info);} .b-concluido{background:var(--wa);} .b-cancelado{background:var(--danger);}
+    .chip{display:inline-block;padding:7px 11px;border-radius:9px;color:#fff;font-size:13px;margin:6px 6px 0 0;font-weight:700;}
+    .c-blue{background:var(--info);} .c-green{background:var(--wa);} .c-wa{background:#128C7E;} .c-red{background:var(--danger);}
+    .selrow{display:flex;flex-wrap:wrap;gap:8px;}
+    .pill{border:1px solid var(--border);background:var(--surface2);color:var(--text);padding:8px 13px;border-radius:20px;cursor:pointer;}
+    .pill.on{background:var(--primary);color:#141414;border-color:var(--primary);font-weight:800;}
+    .primary{padding:13px 18px;} .danger{background:var(--danger);color:#fff;} .small{padding:8px 12px;font-size:13px;}
+    table{width:100%;border-collapse:collapse;} td{padding:6px 0;border-bottom:1px solid var(--border);}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .hidden{display:none;}
+  </style>
+</head>
+<body>
+  <!-- LOGIN -->
+  <div id="login" class="card">
+    <div class="brand"><span class="mark">💈</span><strong style="font-size:20px">Agenda Barber</strong></div>
+    <div class="muted" style="text-align:center;margin-bottom:8px">Gerenciar pelo computador</div>
+    <label class="label">E-mail</label><input id="l-email" type="email" />
+    <label class="label">Senha</label><input id="l-pass" type="password" />
+    <button class="gold btn-full" onclick="doLogin()">Entrar</button>
+    <div class="err" id="l-err"></div>
+    <div class="muted" style="font-size:13px;margin-top:14px;text-align:center">Não tem conta? <a href="/" style="color:var(--primary)">Criar grátis</a></div>
+  </div>
+
+  <!-- APP -->
+  <div id="app" class="hidden">
+    <header>
+      <div class="hbar">
+        <div><strong id="shop">—</strong> <span class="muted" id="who" style="font-size:13px"></span></div>
+        <button class="logout" onclick="logout()">Sair</button>
+      </div>
+      <div class="tabs" id="tabs"></div>
+    </header>
+    <main class="wrap"><div id="view"></div></main>
+  </div>
+
+  <script>
+    const TK = '@agendabarber/gtoken';
+    const $ = (id) => document.getElementById(id);
+    const money = (v) => 'R$ ' + Number(v||0).toFixed(2).replace('.', ',');
+    const hhmm = (t) => (t||'').slice(0,5);
+    const brDate = (iso) => { if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
+    const todayISO = () => new Date().toISOString().split('T')[0];
+    let ME = null;
+
+    async function api(path, opts={}) {
+      const t = localStorage.getItem(TK) || '';
+      const r = await fetch(path, { headers:{'Content-Type':'application/json','Authorization':'Bearer '+t}, ...opts });
+      if (r.status === 401) { logout(); throw new Error('Sessão expirada'); }
+      if (!r.ok) { let d='Erro '+r.status; try{const b=await r.json(); if(b.detail)d=b.detail;}catch(e){} throw new Error(d); }
+      if (r.status === 204) return null;
+      return r.json();
+    }
+
+    async function doLogin() {
+      $('l-err').textContent='';
+      try {
+        const d = await (await fetch('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('l-email').value.trim(),password:$('l-pass').value})})).json();
+        if (!d.token) { $('l-err').textContent = d.detail || 'E-mail ou senha inválidos.'; return; }
+        localStorage.setItem(TK, d.token);
+        start();
+      } catch(e){ $('l-err').textContent='Erro de conexão.'; }
+    }
+    function logout(){ localStorage.removeItem(TK); $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+
+    const isOwner = () => (ME?.user?.role||'owner')==='owner';
+    const TABS = [
+      { id:'agenda', label:'Agenda', owner:false },
+      { id:'novo', label:'Novo agendamento', owner:false },
+      { id:'clientes', label:'Clientes', owner:false },
+      { id:'caixa', label:'Fluxo de caixa', owner:true },
+      { id:'barbeiros', label:'Barbeiros', owner:true },
+      { id:'horarios', label:'Horários', owner:true },
+    ];
+    let current = 'agenda';
+
+    async function start() {
+      try { ME = await api('/auth/me'); } catch(e){ return; }
+      $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+      $('shop').textContent = ME.tenant.name;
+      $('who').textContent = '· ' + ME.user.name + (isOwner()?' (dono)':' (barbeiro)');
+      const tabs = TABS.filter(t => isOwner() || !t.owner);
+      $('tabs').innerHTML = tabs.map(t => `<button class="tab ${t.id===current?'active':''}" onclick="go('${t.id}')">${t.label}</button>`).join('');
+      go(current);
+    }
+    function go(id){ current=id; document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.textContent===TABS.find(t=>t.id===id).label)); render(); }
+
+    function render(){ ({agenda:vAgenda,novo:vNovo,clientes:vClientes,caixa:vCaixa,barbeiros:vBarbeiros,horarios:vHorarios})[current](); }
+
+    // ---------- AGENDA ----------
+    async function vAgenda(){
+      const v=$('view');
+      v.innerHTML = `<h2>Agenda</h2>
+        <div class="card"><label class="label">Data</label><input type="date" id="ag-date" value="${todayISO()}" /></div>
+        <div id="ag-list"></div>`;
+      $('ag-date').onchange = loadAgenda; loadAgenda();
+    }
+    async function loadAgenda(){
+      const d = $('ag-date').value;
+      try {
+        const list = await api('/appointments?date='+d);
+        const box=$('ag-list');
+        if(!list.length){ box.innerHTML='<p class="muted" style="margin-top:14px">Nenhum agendamento nesta data.</p>'; return; }
+        box.innerHTML = list.map(a=>`
+          <div class="item lft" style="border-left-color:${({pendente:'#F0C24B',confirmado:'#4C8DFF',concluido:'#25D366',cancelado:'#FF5C5C'})[a.status]||'#262B36'}">
+            <div class="between"><strong style="color:var(--primary);font-size:17px">${hhmm(a.time)}</strong><span class="badge b-${a.status}">${a.status}</span></div>
+            <div style="margin-top:6px;font-weight:700">${a.customer_name}</div>
+            <div class="muted">${a.service_name} · ${money(a.price)}${a.barber_name?' · ✂️ '+a.barber_name:''}${a.payment_type==='assinatura'?' · assinatura':''}</div>
+            <div>
+              ${a.status!=='concluido'?`<button class="chip c-green" onclick="setStatus(${a.id},'concluido')">Concluir</button>`:''}
+              ${a.status!=='confirmado'&&a.status!=='concluido'?`<button class="chip c-blue" onclick="setStatus(${a.id},'confirmado')">Confirmar</button>`:''}
+              ${a.phone?`<button class="chip c-wa" onclick="wa('${a.phone}','${a.customer_name.replace(/'/g,'')}')">WhatsApp</button>`:''}
+              ${a.status!=='cancelado'?`<button class="chip c-red" onclick="setStatus(${a.id},'cancelado')">Cancelar</button>`:''}
+            </div>
+          </div>`).join('');
+      } catch(e){ $('ag-list').innerHTML='<p class="err">'+e.message+'</p>'; }
+    }
+    async function setStatus(id,status){ try{ await api('/appointments/'+id,{method:'PATCH',body:JSON.stringify({status})}); loadAgenda(); }catch(e){ alert(e.message);} }
+    function wa(phone,name){ const d=phone.replace(/\D/g,''); location.href=`https://wa.me/${d}?text=${encodeURIComponent('Olá '+name+'!')}`; }
+
+    // ---------- NOVO ----------
+    let nv = { services:[], barbers:[], service:null, barber:null, date:todayISO(), time:null, pay:'avista' };
+    async function vNovo(){
+      $('view').innerHTML = `<h2>Novo agendamento</h2><div class="card" id="nv"></div>`;
+      nv.time=null;
+      nv.services = await api('/services'); nv.service = nv.services[0]||null;
+      nv.barbers = isOwner() ? await api('/staff').catch(()=>[]) : [];
+      drawNovo(); loadNvSlots();
+    }
+    function drawNovo(){
+      const c=$('nv');
+      c.innerHTML = `
+        ${isOwner()&&nv.barbers.length?`<label class="label">Barbeiro</label><div class="selrow" id="nv-barbers"></div>`:''}
+        <label class="label">Serviço</label><div class="selrow" id="nv-services"></div>
+        <div class="grid2"><div><label class="label">Data</label><input type="date" id="nv-date" value="${nv.date}"/></div>
+        <div><label class="label">Pagamento</label><select id="nv-pay"><option value="avista">À vista</option><option value="assinatura">Assinatura</option></select></div></div>
+        <label class="label">Horário</label><div class="selrow" id="nv-slots"><span class="muted">Escolha serviço e data.</span></div>
+        <label class="label">Nome do cliente</label><input id="nv-name"/>
+        <label class="label">WhatsApp</label><input id="nv-phone" placeholder="93 99999-9999"/>
+        <button class="gold primary" style="width:100%;margin-top:16px" onclick="saveNovo()">Criar agendamento</button>
+        <div class="err" id="nv-err"></div>`;
+      if(isOwner()&&nv.barbers.length){
+        const bb=$('nv-barbers'); const mk=(id,name)=>{const e=document.createElement('div');e.className='pill'+(nv.barber===id?' on':'');e.textContent=name;e.onclick=()=>{nv.barber=id;drawNovo();loadNvSlots();};return e;};
+        bb.appendChild(mk(null,'Sem definir')); nv.barbers.forEach(b=>bb.appendChild(mk(b.id,b.name)));
+      }
+      const ss=$('nv-services'); nv.services.forEach(s=>{const e=document.createElement('div');e.className='pill'+(nv.service?.id===s.id?' on':'');e.textContent=s.name;e.onclick=()=>{nv.service=s;drawNovo();loadNvSlots();};ss.appendChild(e);});
+      $('nv-date').onchange=(ev)=>{nv.date=ev.target.value;loadNvSlots();};
+      $('nv-pay').onchange=(ev)=>{nv.pay=ev.target.value;};
+    }
+    async function loadNvSlots(){
+      if(!nv.service) return; const box=$('nv-slots'); box.innerHTML='<span class="muted">Buscando…</span>'; nv.time=null;
+      try{
+        const d=await api(`/appointments/availability?date=${nv.date}&service_id=${nv.service.id}${nv.barber?`&barber_id=${nv.barber}`:''}`);
+        if(!d.slots.length){box.innerHTML='<span class="muted">Sem horários livres.</span>';return;}
+        box.innerHTML=''; d.slots.forEach(t=>{const e=document.createElement('div');e.className='pill';e.textContent=t;e.onclick=()=>{nv.time=t;document.querySelectorAll('#nv-slots .pill').forEach(x=>x.classList.remove('on'));e.classList.add('on');};box.appendChild(e);});
+      }catch(e){box.innerHTML='<span class="err">'+e.message+'</span>';}
+    }
+    async function saveNovo(){
+      $('nv-err').textContent='';
+      if(!nv.service||!nv.time||!$('nv-name').value.trim()){$('nv-err').textContent='Preencha serviço, horário e nome.';return;}
+      try{
+        await api('/appointments',{method:'POST',body:JSON.stringify({customer_name:$('nv-name').value.trim(),phone:$('nv-phone').value.trim(),service_id:nv.service.id,service_name:nv.service.name,date:nv.date,time:nv.time+':00',source:'admin',payment_type:nv.pay,barber_id:isOwner()?nv.barber:undefined})});
+        alert('Agendamento criado!'); go('agenda');
+      }catch(e){$('nv-err').textContent=e.message;}
+    }
+
+    // ---------- CLIENTES ----------
+    async function vClientes(){
+      $('view').innerHTML=`<h2>Clientes</h2>
+        <div class="card"><div class="row"><input id="cl-q" placeholder="Buscar por nome ou telefone" style="flex:1"/><button class="gold small" onclick="loadClientes()">Buscar</button></div>
+        <div class="grid2" style="margin-top:12px"><input id="cl-name" placeholder="Nome do novo cliente"/><input id="cl-phone" placeholder="WhatsApp"/></div>
+        <button class="gold small" style="margin-top:10px" onclick="addCliente()">Adicionar cliente</button></div>
+        <div id="cl-list"></div>`;
+      loadClientes();
+    }
+    async function loadClientes(){
+      const q=$('cl-q')?.value||'';
+      const list=await api('/clients'+(q?'?search='+encodeURIComponent(q):''));
+      $('cl-list').innerHTML = list.length? list.map(c=>`<div class="item between"><div><strong>${c.name}</strong><div class="muted">${c.phone||'sem telefone'}</div></div>${c.phone?`<button class="chip c-wa" onclick="wa('${c.phone}','${c.name.replace(/'/g,'')}')">WhatsApp</button>`:''}</div>`).join('') : '<p class="muted" style="margin-top:12px">Nenhum cliente.</p>';
+    }
+    async function addCliente(){
+      const name=$('cl-name').value.trim(); if(!name){alert('Informe o nome.');return;}
+      try{ await api('/clients',{method:'POST',body:JSON.stringify({name,phone:$('cl-phone').value.trim()})}); $('cl-name').value='';$('cl-phone').value=''; loadClientes(); }catch(e){alert(e.message);}
+    }
+
+    // ---------- CAIXA ----------
+    async function vCaixa(){
+      $('view').innerHTML=`<h2>Fluxo de caixa</h2><div id="cx-sum" class="row"></div>
+        <div class="card" style="margin-top:12px"><div class="grid2"><select id="cx-type"><option value="entrada">Entrada</option><option value="saida">Saída</option></select><input id="cx-val" placeholder="Valor" inputmode="decimal"/></div>
+        <input id="cx-desc" placeholder="Descrição" style="margin-top:10px"/><button class="gold small" style="margin-top:10px" onclick="addTx()">Lançar</button></div>
+        <div id="cx-list"></div>`;
+      loadCaixa();
+    }
+    async function loadCaixa(){
+      const s=await api('/cashflow/summary'); const list=await api('/cashflow');
+      $('cx-sum').innerHTML=`<div class="stat"><div class="n">${money(s.saldo)}</div><div class="l">saldo</div></div><div class="stat"><div class="n" style="color:var(--wa)">${money(s.entradas)}</div><div class="l">entradas</div></div><div class="stat"><div class="n" style="color:var(--danger)">${money(s.saidas)}</div><div class="l">saídas</div></div>`;
+      $('cx-list').innerHTML = list.map(t=>`<div class="item between"><div><strong>${t.description||t.category||'Lançamento'}</strong><div class="muted">${brDate(t.date)}</div></div><div style="text-align:right"><span style="color:${t.type==='entrada'?'var(--wa)':'var(--danger)'};font-weight:800">${t.type==='entrada'?'+':'−'} ${money(t.amount)}</span> <button class="chip c-red small" onclick="delTx(${t.id})">×</button></div></div>`).join('');
+    }
+    async function addTx(){
+      const v=parseFloat(($('cx-val').value||'').replace(',','.')); if(!v||v<=0){alert('Valor inválido.');return;}
+      try{ await api('/cashflow',{method:'POST',body:JSON.stringify({type:$('cx-type').value,amount:v,description:$('cx-desc').value.trim(),category:'',date:todayISO()})}); $('cx-val').value='';$('cx-desc').value=''; loadCaixa(); }catch(e){alert(e.message);}
+    }
+    async function delTx(id){ if(!confirm('Excluir lançamento?'))return; await api('/cashflow/'+id,{method:'DELETE'}); loadCaixa(); }
+
+    // ---------- BARBEIROS ----------
+    async function vBarbeiros(){
+      $('view').innerHTML=`<h2>Barbeiros</h2><p class="muted" style="margin-bottom:12px">Cada barbeiro entra com o próprio login e vê apenas os atendimentos dele.</p>
+        <div class="card"><div class="grid2"><input id="bb-name" placeholder="Nome"/><input id="bb-email" placeholder="E-mail (login)"/></div>
+        <input id="bb-pass" type="password" placeholder="Senha (mín. 6)" style="margin-top:10px"/><button class="gold small" style="margin-top:10px" onclick="addBarber()">Criar acesso</button><div class="err" id="bb-err"></div></div>
+        <div id="bb-list"></div>`;
+      loadBarbeiros();
+    }
+    async function loadBarbeiros(){
+      const list=await api('/staff');
+      $('bb-list').innerHTML = list.length? list.map(b=>`<div class="item between"><div><strong>✂️ ${b.name}</strong><div class="muted">${b.email}</div></div><button class="chip c-red" onclick="delBarber(${b.id},'${b.name.replace(/'/g,'')}')">Desativar</button></div>`).join('') : '<p class="muted" style="margin-top:12px">Nenhum barbeiro. Crie o primeiro acima.</p>';
+    }
+    async function addBarber(){
+      $('bb-err').textContent='';
+      const name=$('bb-name').value.trim(),email=$('bb-email').value.trim(),pass=$('bb-pass').value;
+      if(!name||!email||pass.length<6){$('bb-err').textContent='Preencha nome, e-mail e senha (mín. 6).';return;}
+      try{ await api('/staff',{method:'POST',body:JSON.stringify({name,email,password:pass})}); $('bb-name').value='';$('bb-email').value='';$('bb-pass').value=''; loadBarbeiros(); }catch(e){$('bb-err').textContent=e.message;}
+    }
+    async function delBarber(id,name){ if(!confirm('Desativar o login de '+name+'?'))return; await api('/staff/'+id,{method:'DELETE'}); loadBarbeiros(); }
+
+    // ---------- HORÁRIOS ----------
+    const DIAS=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+    async function vHorarios(){
+      const hours=await api('/hours'); const byDay={}; hours.forEach(h=>byDay[h.weekday]=h);
+      let rows='';
+      for(let w=0;w<7;w++){ const h=byDay[w]||{weekday:w,is_open:false,open_time:'09:00:00',close_time:'19:00:00',slot_minutes:30};
+        rows+=`<div class="item"><div class="between"><strong>${DIAS[w]}</strong><label class="muted" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="h-open-${w}" ${h.is_open?'checked':''} style="width:auto"/> aberto</label></div>
+        <div class="grid2" style="margin-top:8px"><div><span class="muted" style="font-size:12px">Abre</span><input type="time" id="h-o-${w}" value="${hhmm(h.open_time)||'09:00'}"/></div><div><span class="muted" style="font-size:12px">Fecha</span><input type="time" id="h-c-${w}" value="${hhmm(h.close_time)||'19:00'}"/></div></div></div>`;
+      }
+      $('view').innerHTML=`<h2>Horários de funcionamento</h2>${rows}<button class="gold primary" style="width:100%;margin-top:14px" onclick="saveHorarios()">Salvar horários</button><div class="ok" id="h-ok" style="margin-top:8px"></div>`;
+    }
+    async function saveHorarios(){
+      try{
+        for(let w=0;w<7;w++){ const open=$('h-open-'+w).checked;
+          await api('/hours/'+w,{method:'PUT',body:JSON.stringify({weekday:w,is_open:open,open_time:open?$('h-o-'+w).value+':00':null,close_time:open?$('h-c-'+w).value+':00':null,slot_minutes:30})});
+        }
+        $('h-ok').textContent='✓ Horários salvos.';
+      }catch(e){ alert(e.message); }
+    }
+
+    // init
+    if (localStorage.getItem(TK)) start(); else $('login').classList.remove('hidden');
+  </script>
+</body>
+</html>

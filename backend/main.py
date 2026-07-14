@@ -102,3 +102,9 @@ def store(slug: str):
 def owner_panel():
     """Painel do dono do SaaS (protegido pela chave de administrador)."""
     return _serve("painel.html")
+
+
+@app.get("/gerente")
+def manager_web():
+    """Versão web para a barbearia gerenciar (agenda, caixa, barbeiros...)."""
+    return _serve("gerente.html")
