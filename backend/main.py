@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from database import Base, engine
 from demo import seed_demo
+from migrate import run_migrations
 from routers import (
     appointments,
     auth,
@@ -30,6 +31,7 @@ from routers import (
 )
 
 Base.metadata.create_all(bind=engine)
+run_migrations()  # adiciona colunas novas em bancos já existentes
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEB_DIR = os.path.join(BASE_DIR, "web")
