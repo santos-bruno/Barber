@@ -30,18 +30,19 @@ export default function HomeScreen({ navigation }) {
     setError('');
     try {
       const d = todayApi();
-      const [appts, summary] = await Promise.all([
-        getAppointments({ date: d }),
-        getCashSummary({ start: d, end: d }),
-      ]);
+      const owner = (user?.role || 'owner') === 'owner';
+      const appts = await getAppointments({ date: d });
       setToday(appts.filter((a) => a.status !== 'cancelado'));
-      setBalance(summary.saldo);
+      if (owner) {
+        const summary = await getCashSummary({ start: d, end: d });
+        setBalance(summary.saldo);
+      }
     } catch (e) {
       setError(e.message || 'Erro de conexão.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -52,7 +53,8 @@ export default function HomeScreen({ navigation }) {
   };
 
   const status = tenant?.subscription_status;
-  const showBanner = status && status !== 'active';
+  const isOwner = (user?.role || 'owner') === 'owner';
+  const showBanner = isOwner && status && status !== 'active';
 
   const Tile = ({ label, emoji, onPress }) => (
     <TouchableOpacity style={styles.tile} onPress={onPress} activeOpacity={0.8}>
@@ -79,11 +81,15 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.statNum}>{today.length}</Text>
             <Text style={styles.statLabel}>hoje na agenda</Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={[styles.statNum, { color: balance >= 0 ? COLORS.primary : COLORS.danger }]}>{money(balance)}</Text>
-            <Text style={styles.statLabel}>caixa hoje</Text>
-          </View>
+          {isOwner && (
+            <>
+              <View style={styles.statDivider} />
+              <View style={styles.stat}>
+                <Text style={[styles.statNum, { color: balance >= 0 ? COLORS.primary : COLORS.danger }]}>{money(balance)}</Text>
+                <Text style={styles.statLabel}>caixa hoje</Text>
+              </View>
+            </>
+          )}
         </View>
       </LinearGradient>
 
@@ -119,15 +125,18 @@ export default function HomeScreen({ navigation }) {
         <Tile emoji="📅" label="Agenda" onPress={() => navigation.navigate('Agenda')} />
         <Tile emoji="➕" label="Novo agendamento" onPress={() => navigation.navigate('NewAppointment')} />
         <Tile emoji="👥" label="Clientes" onPress={() => navigation.navigate('Clients')} />
-        <Tile emoji="💰" label="Fluxo de caixa" onPress={() => navigation.navigate('CashFlow')} />
-        <Tile emoji="🕐" label="Horários" onPress={() => navigation.navigate('Hours')} />
-        <Tile emoji="🎟️" label="Planos de corte" onPress={() => navigation.navigate('Plans')} />
-        <Tile emoji="📦" label="Loja / Estoque" onPress={() => navigation.navigate('Products')} />
-        <Tile emoji="🛒" label="Pedidos" onPress={() => navigation.navigate('Orders')} />
-        <Tile emoji="💳" label="Assinatura" onPress={() => navigation.navigate('Subscription')} />
+        {isOwner && <Tile emoji="💰" label="Fluxo de caixa" onPress={() => navigation.navigate('CashFlow')} />}
+        {isOwner && <Tile emoji="✂️" label="Barbeiros" onPress={() => navigation.navigate('Staff')} />}
+        {isOwner && <Tile emoji="🕐" label="Horários" onPress={() => navigation.navigate('Hours')} />}
+        {isOwner && <Tile emoji="🎟️" label="Planos de corte" onPress={() => navigation.navigate('Plans')} />}
+        {isOwner && <Tile emoji="📦" label="Loja / Estoque" onPress={() => navigation.navigate('Products')} />}
+        {isOwner && <Tile emoji="🛒" label="Pedidos" onPress={() => navigation.navigate('Orders')} />}
+        {isOwner && <Tile emoji="💳" label="Assinatura" onPress={() => navigation.navigate('Subscription')} />}
       </View>
 
-      <GradientButton title="🔗  Compartilhar link de agendamento" onPress={shareLink} style={{ marginTop: 18 }} />
+      {isOwner && (
+        <GradientButton title="🔗  Compartilhar link de agendamento" onPress={shareLink} style={{ marginTop: 18 }} />
+      )}
 
       <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={{ marginTop: 18, alignSelf: 'center' }}>
         <Text style={styles.settingsLink}>⚙  Configurações</Text>

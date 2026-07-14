@@ -55,8 +55,8 @@ export const getAppointments = (params = {}) => {
   const qs = new URLSearchParams(params).toString();
   return req(`/appointments${qs ? `?${qs}` : ''}`);
 };
-export const getAvailability = (date, serviceId) =>
-  req(`/appointments/availability?date=${date}${serviceId ? `&service_id=${serviceId}` : ''}`);
+export const getAvailability = (date, serviceId, barberId) =>
+  req(`/appointments/availability?date=${date}${serviceId ? `&service_id=${serviceId}` : ''}${barberId ? `&barber_id=${barberId}` : ''}`);
 export const createAppointment = (data) =>
   req('/appointments', { method: 'POST', body: JSON.stringify(data) });
 export const updateAppointment = (id, data) =>
@@ -95,6 +95,13 @@ export const createClientSub = (data) =>
   req('/client-subscriptions', { method: 'POST', body: JSON.stringify(data) });
 export const cancelClientSub = (id) =>
   req(`/client-subscriptions/${id}`, { method: 'DELETE' });
+
+// ---- Barbeiros (equipe) ----
+export const getStaff = () => req('/staff');
+export const createStaff = (data) =>
+  req('/staff', { method: 'POST', body: JSON.stringify(data) });
+export const deleteStaff = (id) =>
+  req(`/staff/${id}`, { method: 'DELETE' });
 
 // ---- Produtos / estoque / pedidos ----
 export const getProducts = () => req('/products');

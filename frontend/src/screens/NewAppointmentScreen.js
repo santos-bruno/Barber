@@ -11,13 +11,18 @@ import {
   View,
 } from 'react-native';
 
-import { createAppointment, getAvailability, getServices } from '../api/client';
+import { createAppointment, getAvailability, getServices, getStaff } from '../api/client';
 import { COLORS } from '../constants/business';
+import { useAuth } from '../context/AuthContext';
 import { apiToBR, toApiDate } from '../utils/date';
 
 export default function NewAppointmentScreen({ navigation }) {
+  const { user } = useAuth();
+  const isOwner = (user?.role || 'owner') === 'owner';
   const [services, setServices] = useState([]);
   const [service, setService] = useState(null);
+  const [barbers, setBarbers] = useState([]);
+  const [barberId, setBarberId] = useState(null);
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
   const [slots, setSlots] = useState([]);
@@ -33,17 +38,18 @@ export default function NewAppointmentScreen({ navigation }) {
       setServices(s);
       if (s.length) setService(s[0]);
     }).catch(() => {});
-  }, []);
+    if (isOwner) getStaff().then(setBarbers).catch(() => {});
+  }, [isOwner]);
 
   useEffect(() => {
     if (!service) return;
     setTime(null);
     setLoadingSlots(true);
-    getAvailability(toApiDate(date), service.id)
+    getAvailability(toApiDate(date), service.id, barberId)
       .then((r) => setSlots(r.slots || []))
       .catch(() => setSlots([]))
       .finally(() => setLoadingSlots(false));
-  }, [service, date]);
+  }, [service, date, barberId]);
 
   const save = async () => {
     if (!service || !time || !name.trim()) {
@@ -61,6 +67,7 @@ export default function NewAppointmentScreen({ navigation }) {
         time: time + ':00',
         source: 'admin',
         payment_type: paymentType,
+        barber_id: isOwner ? barberId : undefined,
       });
       Alert.alert('Pronto!', 'Agendamento criado.', [
         { text: 'OK', onPress: () => navigation.goBack() },
@@ -85,6 +92,22 @@ export default function NewAppointmentScreen({ navigation }) {
       </View>
       {paymentType === 'assinatura' && (
         <Text style={styles.assinHint}>O cliente precisa ter um plano de corte ativo (Clientes → Assinar). O corte não entra no caixa (já pago na mensalidade).</Text>
+      )}
+
+      {isOwner && barbers.length > 0 && (
+        <>
+          <Text style={styles.label}>Barbeiro</Text>
+          <View style={styles.chipRow}>
+            <TouchableOpacity style={[styles.chip, barberId === null && styles.chipActive]} onPress={() => setBarberId(null)}>
+              <Text style={[styles.chipText, barberId === null && styles.chipTextActive]}>Sem definir</Text>
+            </TouchableOpacity>
+            {barbers.map((b) => (
+              <TouchableOpacity key={b.id} style={[styles.chip, barberId === b.id && styles.chipActive]} onPress={() => setBarberId(b.id)}>
+                <Text style={[styles.chipText, barberId === b.id && styles.chipTextActive]}>{b.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
       )}
 
       <Text style={styles.label}>Serviço</Text>

@@ -72,6 +72,10 @@
       <div class="step"><span class="n">1</span><span class="t">Escolha o serviço</span></div>
       <div class="services" id="services"><div class="hint">Carregando…</div></div>
     </div>
+    <div class="card" id="prof-card" style="display:none">
+      <div class="step"><span class="n">✂️</span><span class="t">Escolha o profissional</span></div>
+      <div class="slots" id="profs"></div>
+    </div>
     <div class="card">
       <div class="step"><span class="n">2</span><span class="t">Escolha a data</span></div>
       <input type="date" id="date" />
@@ -104,7 +108,7 @@
     const P = '/public/' + slug;
     let biz = { whatsapp_number: '', nome: '' };
     let services = [];
-    const sel = { service: null, date: null, time: null };
+    const sel = { service: null, date: null, time: null, barber: null };
     const $ = (id) => document.getElementById(id);
     const fmtDateBR = (iso) => { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
     $('tab-loja').href = '/loja/' + slug;
@@ -122,7 +126,25 @@
         document.title = 'Agendar — ' + biz.nome;
         $('form-view').style.display = 'block';
         loadServices();
+        loadBarbers();
       } catch (e) { showFatal('Não foi possível carregar. Tente novamente.'); }
+    }
+
+    async function loadBarbers() {
+      try {
+        const list = await (await fetch(P + '/barbers')).json();
+        if (!list || !list.length) return;
+        const box = $('profs'); box.innerHTML = '';
+        const mk = (id, name) => {
+          const b = document.createElement('div'); b.className = 'slot'; b.textContent = name;
+          if (id === sel.barber) b.classList.add('active');
+          b.onclick = () => { sel.barber = id; document.querySelectorAll('#profs .slot').forEach((e) => e.classList.remove('active')); b.classList.add('active'); loadSlots(); };
+          return b;
+        };
+        box.appendChild(mk(null, 'Qualquer um'));
+        list.forEach((b) => box.appendChild(mk(b.id, b.name)));
+        $('prof-card').style.display = 'block';
+      } catch (e) {}
     }
 
     function showFatal(msg) { $('fatal').textContent = msg; $('fatal').style.display = 'block'; }
@@ -152,7 +174,7 @@
       if (!sel.service || !sel.date) { box.innerHTML = '<div class="hint">Selecione um serviço e uma data.</div>'; return; }
       box.innerHTML = '<div class="hint">Buscando horários livres…</div>';
       try {
-        const data = await (await fetch(`${P}/availability?date=${sel.date}&service_id=${sel.service.id}`)).json();
+        const data = await (await fetch(`${P}/availability?date=${sel.date}&service_id=${sel.service.id}${sel.barber ? `&barber_id=${sel.barber}` : ''}`)).json();
         if (!data.slots || !data.slots.length) { box.innerHTML = '<div class="hint">Sem horários livres nesta data.</div>'; return; }
         box.innerHTML = '';
         data.slots.forEach((t) => {
@@ -170,7 +192,7 @@
       const payload = {
         customer_name: $('name').value.trim(), phone: $('phone').value.trim(),
         service_id: sel.service.id, service_name: sel.service.name,
-        date: sel.date, time: sel.time + ':00', source: 'web', notes: '',
+        barber_id: sel.barber, date: sel.date, time: sel.time + ':00', source: 'web', notes: '',
       };
       try {
         const r = await fetch(P + '/appointments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });

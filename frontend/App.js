@@ -18,6 +18,7 @@ import PlansScreen from './src/screens/PlansScreen';
 import ProductsScreen from './src/screens/ProductsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import SignupScreen from './src/screens/SignupScreen';
+import StaffScreen from './src/screens/StaffScreen';
 import SubscriptionScreen from './src/screens/SubscriptionScreen';
 
 const Stack = createNativeStackNavigator();
@@ -47,6 +48,7 @@ function AppStack() {
       <Stack.Screen name="Clients" component={ClientsScreen} options={{ title: 'Clientes' }} />
       <Stack.Screen name="CashFlow" component={CashFlowScreen} options={{ title: 'Fluxo de Caixa' }} />
       <Stack.Screen name="Hours" component={HoursScreen} options={{ title: 'Horários' }} />
+      <Stack.Screen name="Staff" component={StaffScreen} options={{ title: 'Barbeiros' }} />
       <Stack.Screen name="Plans" component={PlansScreen} options={{ title: 'Planos de Corte' }} />
       <Stack.Screen name="Products" component={ProductsScreen} options={{ title: 'Loja / Estoque' }} />
       <Stack.Screen name="Orders" component={OrdersScreen} options={{ title: 'Pedidos' }} />

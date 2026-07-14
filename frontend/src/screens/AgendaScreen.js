@@ -74,6 +74,7 @@ export default function AgendaScreen() {
       </View>
       <Text style={styles.name}>{item.customer_name}</Text>
       <Text style={styles.sub}>{item.service_name} · {money(item.price)}</Text>
+      {!!item.barber_name && <Text style={styles.barber}>✂️ {item.barber_name}</Text>}
       {item.source === 'web' && <Text style={styles.webTag}>🌐 agendou pelo site</Text>}
 
       <View style={styles.actions}>
@@ -153,6 +154,7 @@ const styles = StyleSheet.create({
   badgeText: { color: '#1a1a1a', fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
   name: { color: COLORS.text, fontSize: 16, fontWeight: '600', marginTop: 8 },
   sub: { color: COLORS.textMuted, marginTop: 2 },
+  barber: { color: COLORS.primary, fontSize: 12.5, marginTop: 4, fontWeight: '600' },
   webTag: { color: '#4a9eff', fontSize: 12, marginTop: 4 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   actBtn: { backgroundColor: '#4a9eff', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7 },
