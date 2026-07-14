@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel do Dono — Agenda Barber</title>
+  <style>
+    :root{--bg:#0F1115;--surface:#171A21;--surface2:#1E222B;--primary:#F0C24B;--gold1:#F6D06B;--gold2:#D99A2B;--text:#F4F6FB;--muted:#9AA3B2;--border:#262B36;--wa:#25D366;--danger:#FF5C5C;--info:#4C8DFF;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;padding:16px;max-width:1000px;margin:0 auto;-webkit-font-smoothing:antialiased;}
+    header{display:flex;align-items:center;gap:12px;padding:14px 0 20px;}
+    .mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--gold1),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:22px;}
+    h1{font-size:20px;font-weight:800;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;}
+    input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:13px;color:var(--text);font-size:16px;margin-top:10px;}
+    button{border:none;border-radius:10px;font-weight:700;cursor:pointer;}
+    .btn-primary{background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#141414;padding:13px 18px;font-size:15px;width:100%;margin-top:14px;}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0;}
+    .stat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;}
+    .stat .n{color:var(--primary);font-size:26px;font-weight:800;}
+    .stat .l{color:var(--muted);font-size:12px;margin-top:4px;}
+    .row{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;}
+    .rh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+    .name{font-weight:700;font-size:16px;}
+    .email{color:var(--muted);font-size:13px;margin-top:2px;}
+    .meta{color:var(--muted);font-size:12.5px;margin-top:6px;}
+    .badge{border-radius:12px;padding:3px 10px;font-size:11px;font-weight:800;text-transform:uppercase;color:#141414;white-space:nowrap;}
+    .b-active{background:var(--wa);} .b-trial{background:var(--primary);} .b-canceled{background:var(--danger);} .b-overdue{background:#E8A33D;}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+    .act{padding:8px 12px;font-size:13px;color:#fff;}
+    .a-free{background:var(--wa);color:#0a0a0a;} .a-block{background:var(--danger);} .a-trial{background:var(--info);} .a-link{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+    .err{color:var(--danger);margin-top:10px;}
+    .muted{color:var(--muted);}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+    .logout{background:none;color:var(--muted);text-decoration:underline;font-size:13px;}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="mark">💈</div>
+    <div><h1>Painel do Dono</h1><div class="muted" style="font-size:13px">Agenda Barber</div></div>
+  </header>
+
+  <!-- Login -->
+  <div id="login" class="card" style="display:none">
+    <strong>Entrar no painel</strong>
+    <p class="muted" style="font-size:13px;margin-top:4px">Digite a chave de administrador (a que você definiu em SUPERADMIN_KEY no Render).</p>
+    <input id="key" type="password" placeholder="Chave de administrador" />
+    <button class="btn-primary" onclick="login()">Entrar</button>
+    <div class="err" id="login-err"></div>
+  </div>
+
+  <!-- Panel -->
+  <div id="panel" style="display:none">
+    <div class="topbar">
+      <span class="muted" id="updated"></span>
+      <button class="logout" onclick="logout()">Sair</button>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div id="list"></div>
+  </div>
+
+  <script>
+    const KEY = '@agendabarber/adminkey';
+    const $ = (id) => document.getElementById(id);
+    const money = (v) => 'R$ ' + Number(v||0).toFixed(2).replace('.', ',');
+    const dateBR = (iso) => iso ? new Date(iso).toLocaleDateString('pt-BR') : '—';
+
+    async function api(path, method='GET') {
+      const key = localStorage.getItem(KEY) || '';
+      const r = await fetch('/admin' + path, { method, headers: { 'X-Admin-Key': key } });
+      if (r.status === 401) { logout(); throw new Error('Chave inválida'); }
+      if (!r.ok) throw new Error('Erro ' + r.status);
+      return r.json();
+    }
+
+    function login() {
+      const k = $('key').value.trim();
+      if (!k) return;
+      localStorage.setItem(KEY, k);
+      load();
+    }
+    function logout() { localStorage.removeItem(KEY); $('panel').style.display='none'; $('login').style.display='block'; }
+
+    const badge = (s) => {
+      const map = { active:['b-active','Ativa'], trial:['b-trial','Teste'], canceled:['b-canceled','Bloqueada'], overdue:['b-overdue','Atrasada'] };
+      const [c,l] = map[s] || ['b-trial', s];
+      return `<span class="badge ${c}">${l}</span>`;
+    };
+
+    async function load() {
+      try {
+        const d = await api('/tenants');
+        $('login').style.display='none'; $('panel').style.display='block';
+        $('updated').textContent = 'Atualizado agora · ' + new Date().toLocaleTimeString('pt-BR');
+        $('stats').innerHTML = `
+          <div class="stat"><div class="n">${d.total_barbearias}</div><div class="l">barbearias</div></div>
+          <div class="stat"><div class="n">${d.assinantes_ativos}</div><div class="l">assinantes ativos</div></div>
+          <div class="stat"><div class="n">${d.em_teste}</div><div class="l">em teste</div></div>
+          <div class="stat"><div class="n">${money(d.mrr_estimado)}</div><div class="l">receita/mês (MRR)</div></div>`;
+        const box = $('list');
+        if (!d.barbearias.length) { box.innerHTML = '<p class="muted">Nenhuma barbearia cadastrada ainda.</p>'; return; }
+        box.innerHTML = '';
+        d.barbearias.forEach((b) => {
+          const venc = b.status === 'active' ? `renova ${dateBR(b.current_period_end)}` : (b.status === 'trial' ? `teste até ${dateBR(b.trial_ends_at)}` : '');
+          const el = document.createElement('div');
+          el.className = 'row';
+          el.innerHTML = `
+            <div class="rh">
+              <div>
+                <div class="name">${b.name}</div>
+                <div class="email">${b.owner_email || 'sem e-mail'}${b.whatsapp ? ' · ' + b.whatsapp : ''}</div>
+              </div>
+              ${badge(b.status)}
+            </div>
+            <div class="meta">Plano: ${b.plan || '—'} · ${venc} · cadastro ${dateBR(b.created_at)} · link: /agendar/${b.slug}</div>
+            <div class="actions">
+              <button class="act a-free" onclick="act(${b.id},'activate')">Liberar 30 dias</button>
+              <button class="act a-trial" onclick="act(${b.id},'trial')">Teste +7 dias</button>
+              <button class="act a-block" onclick="act(${b.id},'block')">Bloquear</button>
+              <a class="act a-link" href="/agendar/${b.slug}" target="_blank">Ver link</a>
+            </div>`;
+          box.appendChild(el);
+        });
+      } catch (e) {
+        $('login').style.display='block';
+        $('login-err').textContent = e.message === 'Chave inválida' ? 'Chave inválida.' : '';
+      }
+    }
+
+    async function act(id, action) {
+      const labels = { activate:'liberar por 30 dias', trial:'estender o teste por 7 dias', block:'bloquear' };
+      if (!confirm('Deseja ' + labels[action] + ' esta barbearia?')) return;
+      try { await api('/tenants/' + id + '/' + action, 'POST'); load(); }
+      catch (e) { alert('Erro: ' + e.message); }
+    }
+
+    // Init
+    if (localStorage.getItem(KEY)) load(); else $('login').style.display='block';
+  </script>
+</body>
+</html>

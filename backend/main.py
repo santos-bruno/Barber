@@ -94,3 +94,9 @@ def booking(slug: str):
 def store(slug: str):
     """Loja virtual de uma barbearia (o JS lê o slug da URL)."""
     return _serve("store.html")
+
+
+@app.get("/painel")
+def owner_panel():
+    """Painel do dono do SaaS (protegido pela chave de administrador)."""
+    return _serve("painel.html")
