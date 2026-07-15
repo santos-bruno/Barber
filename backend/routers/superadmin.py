@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
+import email_send
 import models
 from database import get_db
 from plans import PLANS
@@ -110,6 +111,18 @@ def reset_owner_password(tenant_id: int, db: Session = Depends(get_db)):
     owner.password_hash = hash_password(new_pass)
     db.commit()
     return {"ok": True, "email": owner.email, "password": new_pass}
+
+
+@router.get("/email-status", dependencies=[Depends(_auth)])
+def email_status():
+    """Mostra como o envio de e-mail está configurado (sem expor segredos)."""
+    return email_send.diagnose()
+
+
+@router.post("/email-test", dependencies=[Depends(_auth)])
+def email_test(to: str, db: Session = Depends(get_db)):
+    """Envia um e-mail de teste e devolve o resultado real (com o erro, se houver)."""
+    return email_send.send_test(to)
 
 
 @router.post("/tenants/{tenant_id}/trial", dependencies=[Depends(_auth)])

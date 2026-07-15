@@ -58,6 +58,18 @@
       <button class="logout" onclick="logout()">Sair</button>
     </div>
     <div class="stats" id="stats"></div>
+
+    <div class="card" style="margin-bottom:16px">
+      <strong>Diagnóstico de e-mail</strong>
+      <div class="muted" id="email-status" style="font-size:13px;margin-top:8px">Verificando…</div>
+      <input id="test-to" type="email" placeholder="Enviar teste para (seu e-mail)" />
+      <div class="actions" style="margin-top:10px">
+        <button class="act a-trial" onclick="testEmail()">Enviar e-mail de teste</button>
+        <button class="act a-link" onclick="loadEmailStatus()">Atualizar status</button>
+      </div>
+      <div id="email-result" style="font-size:13px;margin-top:10px"></div>
+    </div>
+
     <div id="list"></div>
   </div>
 
@@ -94,6 +106,7 @@
         const d = await api('/tenants');
         $('login').style.display='none'; $('panel').style.display='block';
         $('updated').textContent = 'Atualizado agora · ' + new Date().toLocaleTimeString('pt-BR');
+        loadEmailStatus();
         $('stats').innerHTML = `
           <div class="stat"><div class="n">${d.total_barbearias}</div><div class="l">barbearias</div></div>
           <div class="stat"><div class="n">${d.assinantes_ativos}</div><div class="l">assinantes ativos</div></div>
@@ -128,6 +141,37 @@
         $('login').style.display='block';
         $('login-err').textContent = e.message === 'Chave inválida' ? 'Chave inválida.' : '';
       }
+    }
+
+    async function loadEmailStatus() {
+      const box = $('email-status');
+      try {
+        const s = await api('/email-status');
+        if (!s.configured) {
+          box.innerHTML = '<span style="color:var(--danger)">✕ E-mail NÃO configurado.</span> Defina as variáveis SMTP_* (ou RESEND_API_KEY) no Render.';
+          return;
+        }
+        if (s.mode === 'smtp') {
+          box.innerHTML = `✓ Modo <b>SMTP</b> · servidor <b>${s.smtp_host}:${s.smtp_port}</b> · login <b>${s.smtp_user}</b> · senha ${s.smtp_password_set ? 'definida' : '<span style="color:var(--danger)">FALTANDO</span>'} · remetente <b>${s.from}</b>`;
+        } else if (s.mode === 'resend') {
+          box.innerHTML = `✓ Modo <b>Resend</b> · remetente <b>${s.from}</b>`;
+        }
+      } catch (e) { box.textContent = 'Não foi possível ler o status.'; }
+    }
+
+    async function testEmail() {
+      const to = $('test-to').value.trim();
+      const out = $('email-result');
+      if (!to) { out.innerHTML = '<span style="color:var(--danger)">Informe um e-mail.</span>'; return; }
+      out.textContent = 'Enviando…';
+      try {
+        const r = await api('/email-test?to=' + encodeURIComponent(to), 'POST');
+        if (r.ok) {
+          out.innerHTML = '<span style="color:var(--wa)">✓ Enviado! Confira a caixa de entrada e o spam de ' + to + '.</span>';
+        } else {
+          out.innerHTML = '<span style="color:var(--danger)">✕ Falhou:</span> ' + (r.error || 'erro desconhecido');
+        }
+      } catch (e) { out.innerHTML = '<span style="color:var(--danger)">Erro: ' + e.message + '</span>'; }
     }
 
     async function resetOwner(id) {

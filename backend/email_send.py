@@ -30,6 +30,42 @@ def is_configured() -> bool:
     return bool(RESEND_API_KEY or (SMTP_HOST and SMTP_USER and SMTP_PASSWORD))
 
 
+def diagnose() -> dict:
+    """Estado da configuração de e-mail (sem expor segredos)."""
+    if RESEND_API_KEY:
+        mode = "resend"
+    elif SMTP_HOST and SMTP_USER and SMTP_PASSWORD:
+        mode = "smtp"
+    else:
+        mode = "nenhum"
+    return {
+        "configured": is_configured(),
+        "mode": mode,
+        "from": MAIL_FROM,
+        "smtp_host": SMTP_HOST or None,
+        "smtp_port": SMTP_PORT,
+        "smtp_user": SMTP_USER or None,
+        "smtp_password_set": bool(SMTP_PASSWORD),
+        "resend_key_set": bool(RESEND_API_KEY),
+    }
+
+
+def send_test(to: str) -> dict:
+    """Envia um e-mail de teste e devolve o resultado real (com o erro, se houver)."""
+    if not is_configured():
+        return {"ok": False, "error": "E-mail não configurado. Defina SMTP_* ou RESEND_API_KEY no Render."}
+    html = (
+        "<div style='font-family:Arial,sans-serif;padding:16px'>"
+        "<h2 style='color:#F0C24B'>✅ Teste do Agenda Barber</h2>"
+        "<p>Se você recebeu este e-mail, o envio está funcionando.</p></div>"
+    )
+    try:
+        _send_raw(to, "Teste de e-mail — Agenda Barber 💈", html)
+        return {"ok": True}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+
 def _plain_from() -> str:
     # extrai só o endereço, se vier no formato "Nome <email>"
     if "<" in MAIL_FROM and ">" in MAIL_FROM:
@@ -37,45 +73,45 @@ def _plain_from() -> str:
     return MAIL_FROM
 
 
-def send_email(to: str, subject: str, html: str) -> bool:
+def _send_raw(to: str, subject: str, html: str) -> None:
+    """Envia de fato. Levanta exceção em caso de falha (não engole o erro)."""
     if RESEND_API_KEY:
-        try:
-            r = httpx.post(
-                "https://api.resend.com/emails",
-                headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
-                json={"from": MAIL_FROM, "to": [to], "subject": subject, "html": html},
-                timeout=20,
-            )
-            if r.status_code >= 300:
-                print(f"[email] Resend {r.status_code}: {r.text}")
-            return r.status_code < 300
-        except Exception as e:  # noqa: BLE001
-            print(f"[email] Resend falhou: {e}")
-            return False
+        r = httpx.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
+            json={"from": MAIL_FROM, "to": [to], "subject": subject, "html": html},
+            timeout=20,
+        )
+        if r.status_code >= 300:
+            raise RuntimeError(f"Resend {r.status_code}: {r.text}")
+        return
 
-    if SMTP_HOST and SMTP_USER and SMTP_PASSWORD:
-        try:
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = subject
-            msg["From"] = MAIL_FROM
-            msg["To"] = to
-            msg.attach(MIMEText(html, "html"))
-            ctx = ssl.create_default_context()
-            if SMTP_PORT == 465:
-                with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=ctx) as s:
-                    s.login(SMTP_USER, SMTP_PASSWORD)
-                    s.sendmail(_plain_from(), [to], msg.as_string())
-            else:
-                with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as s:
-                    s.starttls(context=ctx)
-                    s.login(SMTP_USER, SMTP_PASSWORD)
-                    s.sendmail(_plain_from(), [to], msg.as_string())
-            return True
-        except Exception as e:  # noqa: BLE001
-            print(f"[email] SMTP falhou: {e}")
-            return False
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = MAIL_FROM
+    msg["To"] = to
+    msg.attach(MIMEText(html, "html"))
+    ctx = ssl.create_default_context()
+    if SMTP_PORT == 465:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=ctx, timeout=20) as s:
+            s.login(SMTP_USER, SMTP_PASSWORD)
+            s.sendmail(_plain_from(), [to], msg.as_string())
+    else:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as s:
+            s.starttls(context=ctx)
+            s.login(SMTP_USER, SMTP_PASSWORD)
+            s.sendmail(_plain_from(), [to], msg.as_string())
 
-    return False
+
+def send_email(to: str, subject: str, html: str) -> bool:
+    if not is_configured():
+        return False
+    try:
+        _send_raw(to, subject, html)
+        return True
+    except Exception as e:  # noqa: BLE001
+        print(f"[email] falhou: {e}")
+        return False
 
 
 def _welcome_html(owner_name: str, shop_name: str, slug: str, trial_days: int) -> str:

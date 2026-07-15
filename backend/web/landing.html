@@ -192,7 +192,7 @@
         const r = await fetch('/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
         const data = await r.json();
         if(!r.ok){ msg.className='msg err'; msg.textContent=data.detail||'Erro ao criar conta.'; return; }
-        showAfterAuth(data);
+        showAfterAuth(data, true);
       }catch(e){ msg.className='msg err'; msg.textContent='Erro de conexão.'; }
     }
 
@@ -206,11 +206,16 @@
       }catch(e){ msg.className='msg err'; msg.textContent='Erro de conexão.'; }
     }
 
-    function showAfterAuth(auth){
+    function showAfterAuth(auth, fresh){
       const link = `${location.origin}/agendar/${auth.tenant.slug}`;
       $('signup-form').style.display='none';
       const done = $('signup-done'); done.style.display='block';
-      done.innerHTML = `
+      const emailNote = fresh ? `
+        <div class="panel" style="border-color:var(--primary)">
+          <strong>📧 Enviamos um e-mail de boas-vindas</strong>
+          <p style="color:var(--muted);margin-top:6px">Confira a caixa de entrada de <b>${auth.user.email}</b> (e também o <b>spam/lixo eletrônico</b>) — nele estão seu link e os primeiros passos. Se não chegar em alguns minutos, não tem problema: seus dados de acesso são o e-mail e a senha que você acabou de cadastrar.</p>
+        </div>` : '';
+      done.innerHTML = emailNote + `
         <div class="panel">
           <strong>✅ Bem-vindo, ${auth.user.name}!</strong>
           <p style="color:var(--muted);margin-top:6px">${auth.tenant.name} · status: ${auth.tenant.subscription_status}</p>
