@@ -45,6 +45,17 @@ services:
         sync: false                  # chave da API HTTP do Brevo (recomendado; SMTP e' bloqueado no Render)
       - key: RESEND_API_KEY
         sync: false                  # alternativa ao Brevo p/ enviar e-mail (opcional)
+      # Appmax (gateway alternativo por API) — opcional
+      - key: APPMAX_MERCHANT_CLIENT_ID
+        sync: false                  # client_id do merchant (gerado ao instalar o app Appmax)
+      - key: APPMAX_MERCHANT_CLIENT_SECRET
+        sync: false                  # client_secret do merchant
+      - key: APPMAX_AUTH_URL
+        value: https://auth.appmax.com.br/oauth2/token   # sandbox: https://auth.sandboxappmax.com.br/oauth2/token
+      - key: APPMAX_BASE_URL
+        value: https://api.appmax.com.br                 # sandbox: https://api.sandboxappmax.com.br
+      - key: APPMAX_WEBHOOK_TOKEN
+        generateValue: true          # valida o webhook da Appmax
 
 databases:
   - name: agenda-barber-db

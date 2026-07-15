@@ -71,6 +71,13 @@ class CheckoutOut(BaseModel):
     status: str
 
 
+class AppmaxCheckoutInput(BaseModel):
+    plan: str  # mensal | anual
+    card_token: str  # token gerado no navegador pelo Appmax JS
+    holder_name: str
+    cpf_cnpj: str
+
+
 # ---------- Services ----------
 class ServiceBase(BaseModel):
     name: str

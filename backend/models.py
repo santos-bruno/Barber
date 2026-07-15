@@ -37,6 +37,9 @@ class Tenant(Base):
     current_period_end = Column(DateTime, nullable=True)
     asaas_customer_id = Column(String, default="")
     asaas_subscription_id = Column(String, default="")
+    # Appmax (gateway alternativo)
+    appmax_customer_id = Column(String, default="")
+    appmax_order_id = Column(String, default="")
 
     users = relationship("User", back_populates="tenant")
 

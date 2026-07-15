@@ -16,6 +16,7 @@ from database import Base, engine
 from demo import seed_demo
 from migrate import run_migrations
 from routers import (
+    appmax_billing,
     appointments,
     auth,
     billing,
@@ -53,6 +54,7 @@ app.add_middleware(
 # API
 app.include_router(auth.router)
 app.include_router(billing.router)
+app.include_router(appmax_billing.router)
 app.include_router(public.router)
 app.include_router(services.router)
 app.include_router(clients.router)
@@ -118,6 +120,12 @@ def owner_panel():
 def manager_web():
     """Versão web para a barbearia gerenciar (agenda, caixa, barbeiros...)."""
     return _serve("gerente.html")
+
+
+@app.get("/assinar")
+def subscribe_page():
+    """Checkout de assinatura via Appmax (cartão recorrente ou link de pagamento)."""
+    return _serve("assinar.html")
 
 
 @app.get("/guia")

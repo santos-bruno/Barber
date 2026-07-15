@@ -17,6 +17,10 @@ def _bool_default() -> str:
 
 # Colunas que podem faltar em bancos criados por versões anteriores.
 EXPECTED = {
+    "tenants": {
+        "appmax_customer_id": "VARCHAR DEFAULT ''",
+        "appmax_order_id": "VARCHAR DEFAULT ''",
+    },
     "appointments": {
         "barber_id": "INTEGER",
         "barber_name": "VARCHAR DEFAULT ''",
