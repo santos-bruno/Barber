@@ -70,6 +70,14 @@ def on_startup() -> None:
     seed_demo()
 
 
+@app.get("/favicon.ico")
+def favicon():
+    path = os.path.join(WEB_DIR, "favicon.png")
+    if os.path.exists(path):
+        return FileResponse(path)
+    return JSONResponse({}, status_code=404)
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

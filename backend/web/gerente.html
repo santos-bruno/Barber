@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/favicon.png" />
   <title>Gerenciar — Agenda Barber</title>
   <style>
     :root{--bg:#0F1115;--surface:#171A21;--surface2:#1E222B;--primary:#F0C24B;--gold1:#F6D06B;--gold2:#D99A2B;--text:#F4F6FB;--muted:#9AA3B2;--border:#262B36;--wa:#25D366;--danger:#FF5C5C;--info:#4C8DFF;}
@@ -114,6 +115,7 @@
       { id:'pedidos', label:'Pedidos', owner:true },
       { id:'horarios', label:'Horários', owner:true },
       { id:'assinatura', label:'Assinatura', owner:true },
+      { id:'conta', label:'Minha conta', owner:false },
     ];
     let current = 'agenda';
 
@@ -128,7 +130,7 @@
     }
     function go(id){ current=id; document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.textContent===TABS.find(t=>t.id===id).label)); render(); }
 
-    function render(){ ({agenda:vAgenda,novo:vNovo,clientes:vClientes,caixa:vCaixa,barbeiros:vBarbeiros,horarios:vHorarios,planos:vPlanos,loja:vLoja,pedidos:vPedidos,assinatura:vAssinatura})[current](); }
+    function render(){ ({agenda:vAgenda,novo:vNovo,clientes:vClientes,caixa:vCaixa,barbeiros:vBarbeiros,horarios:vHorarios,planos:vPlanos,loja:vLoja,pedidos:vPedidos,assinatura:vAssinatura,conta:vConta})[current](); }
 
     // ---------- AGENDA ----------
     async function vAgenda(){
@@ -256,7 +258,7 @@
     }
     async function loadBarbeiros(){
       const list=await api('/staff');
-      $('bb-list').innerHTML = list.length? list.map(b=>`<div class="item between"><div><strong>✂️ ${b.name}</strong><div class="muted">${b.email}</div></div><div><button class="chip c-blue" onclick="openBH(${b.id},'${b.name.replace(/'/g,'')}')">Horários</button><button class="chip c-red" onclick="delBarber(${b.id},'${b.name.replace(/'/g,'')}')">Desativar</button></div></div>`).join('') : '<p class="muted" style="margin-top:12px">Nenhum barbeiro. Crie o primeiro acima.</p>';
+      $('bb-list').innerHTML = list.length? list.map(b=>`<div class="item between"><div><strong>✂️ ${b.name}</strong><div class="muted">${b.email}</div></div><div><button class="chip c-blue" onclick="openBH(${b.id},'${b.name.replace(/'/g,'')}')">Horários</button><button class="chip" style="background:var(--surface2);color:var(--text)" onclick="resetBarber(${b.id},'${b.name.replace(/'/g,'')}')">🔑 Senha</button><button class="chip c-red" onclick="delBarber(${b.id},'${b.name.replace(/'/g,'')}')">Desativar</button></div></div>`).join('') : '<p class="muted" style="margin-top:12px">Nenhum barbeiro. Crie o primeiro acima.</p>';
     }
     const _DIAS=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
     async function openBH(id,name){
@@ -405,6 +407,26 @@
     async function doSub(){
       $('as-err').textContent='';
       try{ const r=await api('/billing/subscribe',{method:'POST',body:JSON.stringify({plan:$('as-plan').value,cpf_cnpj:$('as-doc').value.replace(/\D/g,''),billing_type:'CREDIT_CARD'})}); if(r.checkout_url) location.href=r.checkout_url; else {$('as-err').style.color='var(--wa)';$('as-err').textContent='Assinatura criada! Verifique seu e-mail.';} }catch(e){$('as-err').textContent=e.message;}
+    }
+
+    // ---------- MINHA CONTA ----------
+    async function vConta(){
+      $('view').innerHTML=`<h2>Minha conta</h2>
+        <div class="card" style="max-width:420px">
+          <div class="muted" style="font-size:13px">${ME.user.name} · ${ME.user.email}</div>
+          <label class="label">Senha atual</label><input id="cp-cur" type="password"/>
+          <label class="label">Nova senha (mín. 6)</label><input id="cp-new" type="password"/>
+          <button class="gold small" style="margin-top:12px" onclick="doChangePass()">Alterar senha</button>
+          <div class="err" id="cp-msg"></div>
+        </div>`;
+    }
+    async function doChangePass(){
+      const m=$('cp-msg'); m.textContent=''; m.className='err';
+      try{ await api('/auth/change-password',{method:'POST',body:JSON.stringify({current_password:$('cp-cur').value,new_password:$('cp-new').value})}); m.className='ok'; m.textContent='✓ Senha alterada.'; $('cp-cur').value='';$('cp-new').value=''; }catch(e){ m.textContent=e.message; }
+    }
+    async function resetBarber(id,name){
+      if(!confirm('Gerar nova senha para '+name+'?'))return;
+      try{ const r=await api('/staff/'+id+'/reset-password',{method:'POST',body:JSON.stringify({})}); alert('Nova senha de '+name+':\n\nLogin: '+r.email+'\nSenha: '+r.password+'\n\nPasse para o barbeiro.'); }catch(e){alert(e.message);}
     }
 
     // init

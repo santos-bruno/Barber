@@ -123,3 +123,36 @@ def send_welcome(owner_name: str, shop_name: str, email: str, slug: str, trial_d
         f"Bem-vindo ao Agenda Barber, {shop_name}! 💈",
         _welcome_html(owner_name, shop_name, slug, trial_days),
     )
+
+
+def _invite_html(barber_name: str, shop_name: str, email: str, password: str) -> str:
+    gerente = f"{APP_BASE_URL}/gerente"
+    return f"""
+    <div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0F1115;color:#F4F6FB;padding:24px;border-radius:16px;max-width:560px;margin:0 auto">
+      <div style="text-align:center"><div style="font-size:40px">✂️</div>
+      <h1 style="color:#F0C24B;margin:6px 0">Agenda Barber</h1></div>
+      <p>Olá, <strong>{barber_name}</strong>!</p>
+      <p>A <strong>{shop_name}</strong> criou um acesso para você no Agenda Barber.
+      Com ele, você vê <strong>a sua agenda</strong> e os seus atendimentos.</p>
+      <div style="background:#171A21;border:1px solid #262B36;border-radius:12px;padding:14px;margin:14px 0">
+        <p style="margin:4px 0"><strong>Login:</strong> {email}</p>
+        <p style="margin:4px 0"><strong>Senha:</strong> {password}</p>
+      </div>
+      <p><strong>Como entrar:</strong></p>
+      <ul style="line-height:1.7">
+        <li>No computador: <a href="{gerente}" style="color:#F0C24B">{gerente}</a></li>
+        <li>No celular: baixe o app Android e entre com esse login</li>
+      </ul>
+      <p style="color:#9AA3B2;font-size:13px">Recomendamos trocar a senha no primeiro acesso.</p>
+    </div>
+    """
+
+
+def send_barber_invite(barber_name: str, shop_name: str, email: str, password: str) -> None:
+    if not is_configured():
+        return
+    send_email(
+        email,
+        f"Seu acesso na {shop_name} — Agenda Barber ✂️",
+        _invite_html(barber_name, shop_name, email, password),
+    )

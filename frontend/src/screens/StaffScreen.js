@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-import { createStaff, deleteStaff, getStaff } from '../api/client';
+import { createStaff, deleteStaff, getStaff, resetBarberPassword } from '../api/client';
 import GradientButton from '../components/GradientButton';
 import { COLORS } from '../constants/business';
 
@@ -39,6 +39,21 @@ export default function StaffScreen({ navigation }) {
     } catch (e) { Alert.alert('Erro', e.message); }
   };
 
+  const resetPass = (b) => {
+    Alert.alert('Redefinir senha', `Gerar uma nova senha para ${b.name}?`, [
+      { text: 'Não' },
+      {
+        text: 'Sim',
+        onPress: async () => {
+          try {
+            const r = await resetBarberPassword(b.id, null);
+            Alert.alert('Nova senha', `Login: ${b.email}\nSenha: ${r.password}\n\nPasse essa senha para ${b.name}.`);
+          } catch (e) { Alert.alert('Erro', e.message); }
+        },
+      },
+    ]);
+  };
+
   const remove = (b) => {
     Alert.alert('Remover acesso', `Desativar o login de ${b.name}? Ele não poderá mais entrar.`, [
       { text: 'Não' },
@@ -55,6 +70,9 @@ export default function StaffScreen({ navigation }) {
       </View>
       <TouchableOpacity style={styles.hoursBtn} onPress={() => navigation.navigate('BarberHours', { barberId: item.id, barberName: item.name })}>
         <Text style={styles.hoursText}>Horários</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.keyBtn} onPress={() => resetPass(item)}>
+        <Text style={styles.keyText}>🔑</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => remove(item)}><Text style={styles.remove}>Desativar</Text></TouchableOpacity>
     </View>
@@ -102,6 +120,8 @@ const styles = StyleSheet.create({
   remove: { color: COLORS.danger, fontWeight: '700' },
   hoursBtn: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.info, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, marginRight: 8 },
   hoursText: { color: COLORS.info, fontWeight: '700', fontSize: 13 },
+  keyBtn: { backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, marginRight: 8 },
+  keyText: { fontSize: 15 },
   empty: { color: COLORS.textMuted, textAlign: 'center', marginTop: 40 },
   fab: { position: 'absolute', right: 20, bottom: 24, backgroundColor: COLORS.primary, width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', elevation: 4 },
   fabText: { color: COLORS.onPrimary, fontSize: 30, fontWeight: '700', marginTop: -2 },

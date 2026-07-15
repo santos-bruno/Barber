@@ -22,6 +22,15 @@ class LoginInput(BaseModel):
     password: str
 
 
+class ChangePasswordInput(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class ResetPasswordInput(BaseModel):
+    new_password: Optional[str] = None
+
+
 class TenantOut(BaseModel):
     id: int
     name: str

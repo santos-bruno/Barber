@@ -18,6 +18,9 @@ from security import (
     hash_password,
     verify_password,
 )
+
+
+
 from seeds import seed_tenant_defaults
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -110,3 +113,18 @@ def me(
 ):
     # Reaproveita AuthOut sem gerar novo token (o cliente já tem o seu).
     return schemas.AuthOut(token="", user=user, tenant=tenant)
+
+
+@router.post("/change-password")
+def change_password(
+    payload: schemas.ChangePasswordInput,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Senha atual incorreta.")
+    if len(payload.new_password) < 6:
+        raise HTTPException(status_code=400, detail="A nova senha deve ter ao menos 6 caracteres.")
+    user.password_hash = hash_password(payload.new_password)
+    db.commit()
+    return {"ok": True}

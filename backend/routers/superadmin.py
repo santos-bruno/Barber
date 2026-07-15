@@ -3,6 +3,7 @@
 Protegido por chave (header X-Admin-Key == SUPERADMIN_KEY).
 """
 import os
+import secrets
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 import models
 from database import get_db
 from plans import PLANS
+from security import hash_password
 
 router = APIRouter(prefix="/admin", tags=["superadmin"])
 
@@ -90,6 +92,24 @@ def block(tenant_id: int, db: Session = Depends(get_db)):
     t.subscription_status = "canceled"
     db.commit()
     return {"ok": True, "status": t.subscription_status}
+
+
+@router.post("/tenants/{tenant_id}/reset-owner-password", dependencies=[Depends(_auth)])
+def reset_owner_password(tenant_id: int, db: Session = Depends(get_db)):
+    """Gera uma nova senha para o dono da barbearia e a devolve."""
+    _get_tenant(db, tenant_id)
+    owner = (
+        db.query(models.User)
+        .filter(models.User.tenant_id == tenant_id, models.User.role == "owner")
+        .order_by(models.User.id)
+        .first()
+    )
+    if not owner:
+        raise HTTPException(status_code=404, detail="Dono não encontrado.")
+    new_pass = secrets.token_urlsafe(6)
+    owner.password_hash = hash_password(new_pass)
+    db.commit()
+    return {"ok": True, "email": owner.email, "password": new_pass}
 
 
 @router.post("/tenants/{tenant_id}/trial", dependencies=[Depends(_auth)])

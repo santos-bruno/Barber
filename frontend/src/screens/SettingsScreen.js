@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import { getHealth } from '../api/client';
+import { changePassword, getHealth } from '../api/client';
 import { getApiUrl, setApiUrl } from '../config';
 import { COLORS } from '../constants/business';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +18,27 @@ import { useAuth } from '../context/AuthContext';
 export default function SettingsScreen() {
   const { tenant } = useAuth();
   const [url, setUrl] = useState('');
+  const [curPass, setCurPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [changing, setChanging] = useState(false);
+
+  const doChangePassword = async () => {
+    if (!curPass || newPass.length < 6) {
+      Alert.alert('Atenção', 'Informe a senha atual e uma nova (mín. 6).');
+      return;
+    }
+    setChanging(true);
+    try {
+      await changePassword({ current_password: curPass, new_password: newPass });
+      setCurPass('');
+      setNewPass('');
+      Alert.alert('Pronto!', 'Senha alterada com sucesso.');
+    } catch (e) {
+      Alert.alert('Erro', e.message);
+    } finally {
+      setChanging(false);
+    }
+  };
   const [testing, setTesting] = useState(false);
   const [status, setStatus] = useState(null); // 'ok' | 'fail'
 
@@ -75,6 +96,13 @@ export default function SettingsScreen() {
 
       {status === 'ok' && <Text style={styles.ok}>✓ Conectado</Text>}
       {status === 'fail' && <Text style={styles.fail}>✕ Sem conexão</Text>}
+
+      <Text style={[styles.label, { marginTop: 28 }]}>Alterar minha senha</Text>
+      <TextInput style={styles.input} placeholder="Senha atual" placeholderTextColor={COLORS.textMuted} secureTextEntry value={curPass} onChangeText={setCurPass} />
+      <TextInput style={[styles.input, { marginTop: 10 }]} placeholder="Nova senha (mín. 6)" placeholderTextColor={COLORS.textMuted} secureTextEntry value={newPass} onChangeText={setNewPass} />
+      <TouchableOpacity style={[styles.btn, { marginTop: 12 }]} onPress={doChangePassword} disabled={changing}>
+        {changing ? <ActivityIndicator color="#1a1a1a" /> : <Text style={[styles.btnText, { color: '#1a1a1a' }]}>Alterar senha</Text>}
+      </TouchableOpacity>
 
       <View style={styles.info}>
         <Text style={styles.infoTitle}>{tenant?.name || 'Minha Barbearia'}</Text>

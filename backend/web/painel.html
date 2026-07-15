@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/favicon.png" />
   <title>Painel do Dono — Agenda Barber</title>
   <style>
     :root{--bg:#0F1115;--surface:#171A21;--surface2:#1E222B;--primary:#F0C24B;--gold1:#F6D06B;--gold2:#D99A2B;--text:#F4F6FB;--muted:#9AA3B2;--border:#262B36;--wa:#25D366;--danger:#FF5C5C;--info:#4C8DFF;}
@@ -118,6 +119,7 @@
               <button class="act a-free" onclick="act(${b.id},'activate')">Liberar 30 dias</button>
               <button class="act a-trial" onclick="act(${b.id},'trial')">Teste +7 dias</button>
               <button class="act a-block" onclick="act(${b.id},'block')">Bloquear</button>
+              <button class="act a-link" onclick="resetOwner(${b.id})">🔑 Senha do dono</button>
               <a class="act a-link" href="/agendar/${b.slug}" target="_blank">Ver link</a>
             </div>`;
           box.appendChild(el);
@@ -126,6 +128,14 @@
         $('login').style.display='block';
         $('login-err').textContent = e.message === 'Chave inválida' ? 'Chave inválida.' : '';
       }
+    }
+
+    async function resetOwner(id) {
+      if (!confirm('Gerar uma nova senha para o dono desta barbearia?')) return;
+      try {
+        const r = await api('/tenants/' + id + '/reset-owner-password', 'POST');
+        alert('Nova senha do dono:\n\nLogin: ' + r.email + '\nSenha: ' + r.password + '\n\nPasse para o responsável da barbearia.');
+      } catch (e) { alert('Erro: ' + e.message); }
     }
 
     async function act(id, action) {

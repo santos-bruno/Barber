@@ -1,9 +1,11 @@
 """Gestão de barbeiros (logins de equipe) — somente o dono."""
+import secrets
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+import email_send
 import models
 import schemas
 from database import get_db
@@ -32,6 +34,7 @@ def list_staff(
 @router.post("", response_model=schemas.StaffOut, status_code=201)
 def create_staff(
     payload: schemas.StaffCreate,
+    background_tasks: BackgroundTasks,
     tenant: models.Tenant = Depends(require_active_subscription),
     db: Session = Depends(get_db),
 ):
@@ -51,7 +54,32 @@ def create_staff(
     db.add(barber)
     db.commit()
     db.refresh(barber)
+
+    # Convite por e-mail com o acesso (best-effort).
+    background_tasks.add_task(
+        email_send.send_barber_invite,
+        barber.name,
+        tenant.name,
+        barber.email,
+        payload.password,
+    )
     return barber
+
+
+@router.post("/{barber_id}/reset-password")
+def reset_barber_password(
+    barber_id: int,
+    payload: schemas.ResetPasswordInput,
+    tenant: models.Tenant = Depends(require_active_subscription),
+    db: Session = Depends(get_db),
+):
+    barber = _barber_of_tenant(db, tenant.id, barber_id)
+    new_pass = payload.new_password or secrets.token_urlsafe(6)
+    if len(new_pass) < 6:
+        raise HTTPException(status_code=400, detail="Senha deve ter ao menos 6 caracteres.")
+    barber.password_hash = hash_password(new_pass)
+    db.commit()
+    return {"ok": True, "email": barber.email, "password": new_pass}
 
 
 @router.delete("/{staff_id}", status_code=204)

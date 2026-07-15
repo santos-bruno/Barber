@@ -28,6 +28,8 @@ export const register = (data) =>
 export const login = (data) =>
   req('/auth/login', { method: 'POST', body: JSON.stringify(data) });
 export const getMe = () => req('/auth/me');
+export const changePassword = (data) =>
+  req('/auth/change-password', { method: 'POST', body: JSON.stringify(data) });
 
 // ---- Billing ----
 export const getPlans = () => req('/billing/plans');
@@ -105,6 +107,8 @@ export const deleteStaff = (id) =>
 export const getBarberHours = (id) => req(`/staff/${id}/hours`);
 export const setBarberHour = (id, weekday, data) =>
   req(`/staff/${id}/hours/${weekday}`, { method: 'PUT', body: JSON.stringify(data) });
+export const resetBarberPassword = (id, new_password) =>
+  req(`/staff/${id}/reset-password`, { method: 'POST', body: JSON.stringify({ new_password }) });
 
 // ---- Produtos / estoque / pedidos ----
 export const getProducts = () => req('/products');
