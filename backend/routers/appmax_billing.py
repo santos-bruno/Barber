@@ -24,10 +24,22 @@ router = APIRouter(prefix="/billing/appmax", tags=["appmax"])
 # Token opcional para validar o webhook (configure o mesmo no app da Appmax).
 APPMAX_WEBHOOK_TOKEN = os.getenv("APPMAX_WEBHOOK_TOKEN", "")
 
-# Eventos da Appmax que aprovam/reprovam a assinatura.
-_APPROVE = {"order_approved", "order_paid", "order_paid_by_pix", "order_integrated"}
+# Eventos da Appmax que aprovam/reprovam a assinatura (schema oficial do webhook).
+_APPROVE = {
+    "order_approved",
+    "order_paid",
+    "order_paid_by_pix",
+    "order_integrated",
+    "subscription_charge_success",
+}
 _CANCEL = {"subscription_cancelation", "order_refund"}
-_OVERDUE = {"subscription_delayed", "payment_not_authorized", "order_billet_overdue"}
+_OVERDUE = {
+    "subscription_delayed",
+    "subscription_charge_failed",
+    "payment_not_authorized",
+    "order_billet_overdue",
+    "order_refused_by_risk",
+}
 
 
 @router.post("/validate")
@@ -49,14 +61,10 @@ def _period_days(plan: str) -> int:
     return 366 if plan == "anual" else 31
 
 
-def _find_tenant_by_payload(db: Session, body: dict):
-    """Localiza a barbearia a partir do order_id/customer_id que vier no webhook."""
-    data = body.get("data") or body
-    order = data.get("order") if isinstance(data.get("order"), dict) else data
-    order_id = str(order.get("id") or data.get("order_id") or body.get("order_id") or "")
-    customer = data.get("customer") if isinstance(data.get("customer"), dict) else {}
-    customer_id = str(customer.get("id") or data.get("customer_id") or "")
-
+def _find_tenant_by_payload(db: Session, data: dict):
+    """Localiza a barbearia pelo order_id/customer_id do webhook (campos planos)."""
+    order_id = str(data.get("order_id") or "")
+    customer_id = str(data.get("customer_id") or "")
     q = db.query(models.Tenant)
     if order_id:
         t = q.filter(models.Tenant.appmax_order_id == order_id).first()
@@ -71,40 +79,37 @@ def _find_tenant_by_payload(db: Session, body: dict):
 
 @router.post("/webhook")
 async def webhook(request: Request, db: Session = Depends(get_db)):
-    """Recebe eventos da Appmax e atualiza o status da assinatura."""
-    if APPMAX_WEBHOOK_TOKEN:
-        token = (
-            request.headers.get("x-appmax-token")
-            or request.query_params.get("token")
-            or ""
-        )
-        if token != APPMAX_WEBHOOK_TOKEN:
-            raise HTTPException(status_code=401, detail="Token de webhook inválido.")
+    """Recebe eventos da Appmax e atualiza o status da assinatura.
+
+    A Appmax NÃO envia token/HMAC nos webhooks e exige resposta 2xx rápida
+    (timeout de 5s), senão faz retry. Por isso validamos só por token opcional
+    na querystring (a URL que cadastramos) e sempre respondemos 200.
+    """
+    # Validação opcional por querystring (?token=...), nunca por header —
+    # a Appmax não tem como enviar header, e 401/403 causaria retries.
+    if APPMAX_WEBHOOK_TOKEN and request.query_params.get("token") != APPMAX_WEBHOOK_TOKEN:
+        return {"ok": True}  # ignora silenciosamente (não dispara retry)
 
     try:
         body = await request.json()
-    except Exception:  # noqa: BLE001
-        return {"ok": True}
-
-    event = (body.get("event") or "").lower()
-    tenant = _find_tenant_by_payload(db, body)
-    if not tenant:
-        # Loga para depuração e responde 200 (não reprocessar).
-        print(f"[appmax webhook] tenant não encontrado para evento={event}: {body}")
-        return {"ok": True}
-
-    if event in _APPROVE:
-        tenant.subscription_status = "active"
-        tenant.current_period_end = datetime.utcnow() + timedelta(
-            days=_period_days(tenant.plan)
-        )
-    elif event in _OVERDUE:
-        tenant.subscription_status = "overdue"
-    elif event in _CANCEL:
-        tenant.subscription_status = "canceled"
-
-    db.commit()
-    return {"ok": True}
+        event = (body.get("event") or "").lower()
+        data = body.get("data") or {}
+        print(f"[appmax webhook] evento={event} data={data}")  # payload cru p/ debug
+        tenant = _find_tenant_by_payload(db, data)
+        if tenant:
+            if event in _APPROVE:
+                tenant.subscription_status = "active"
+                tenant.current_period_end = datetime.utcnow() + timedelta(
+                    days=_period_days(tenant.plan)
+                )
+            elif event in _OVERDUE:
+                tenant.subscription_status = "overdue"
+            elif event in _CANCEL:
+                tenant.subscription_status = "canceled"
+            db.commit()
+    except Exception as e:  # noqa: BLE001
+        print(f"[appmax webhook] erro ao processar: {e}")
+    return {"ok": True}  # sempre 200 (evita retries desnecessários)
 
 
 @router.get("/status")

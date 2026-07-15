@@ -398,15 +398,9 @@
       $('view').innerHTML=`<h2>Assinatura do sistema</h2>
         <div class="stat" style="max-width:320px"><div class="n">${label}</div><div class="l">${when?(st.subscription_status==='active'?'renova ':'teste até ')+brDate(String(when).slice(0,10)):''}</div></div>
         <div class="card" style="margin-top:14px"><strong>Assinar / renovar</strong>
-          <label class="label">Plano</label><select id="as-plan">${pl.plans.map(p=>`<option value="${p.id}">${p.label} — ${money(p.price)}</option>`).join('')}</select>
-          <label class="label">CPF ou CNPJ</label><input id="as-doc" placeholder="Somente números"/>
-          <button class="gold small" style="margin-top:12px" onclick="doSub()">Ir para o pagamento</button><div class="err" id="as-err"></div>
-          ${!pl.asaas_configured?'<div class="muted" style="margin-top:8px;font-size:13px">⚠ Pagamento ainda não configurado no servidor.</div>':''}
+          <p class="muted" style="margin:6px 0 12px;font-size:13.5px">Pagamento no cartão com renovação automática, pela Appmax.</p>
+          <button class="gold small" onclick="location.href='/assinar'">Ir para o pagamento</button>
         </div>`;
-    }
-    async function doSub(){
-      $('as-err').textContent='';
-      try{ const r=await api('/billing/subscribe',{method:'POST',body:JSON.stringify({plan:$('as-plan').value,cpf_cnpj:$('as-doc').value.replace(/\D/g,''),billing_type:'CREDIT_CARD'})}); if(r.checkout_url) location.href=r.checkout_url; else {$('as-err').style.color='var(--wa)';$('as-err').textContent='Assinatura criada! Verifique seu e-mail.';} }catch(e){$('as-err').textContent=e.message;}
     }
 
     // ---------- MINHA CONTA ----------

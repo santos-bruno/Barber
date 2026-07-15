@@ -5,12 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="/favicon.png" />
   <title>Assinar — Agenda Barber</title>
-  <!--
-    ⚠️ APPMAX JS: confirme a URL exata do script na doc "1.3 Appmax JS" e cole abaixo.
-    Sem ela, a tokenização do cartão não carrega. Pode vir também um atributo com o
-    external_id gerado na instalação do app (retornado pelo /billing/appmax/validate).
-  -->
-  <!-- <script src="COLE_AQUI_A_URL_DO_APPMAX_JS" data-appmax-external-id="SEU_EXTERNAL_ID"></script> -->
+  <!-- Appmax JS (obrigatório): tokeniza o cartão no navegador e coleta o IP. -->
+  <script src="https://scripts.appmax.com.br/appmax.min.js"></script>
   <style>
     :root{--bg:#0F1115;--surface:#171A21;--surface2:#1E222B;--primary:#F0C24B;--gold1:#F6D06B;--gold2:#D99A2B;--text:#F4F6FB;--muted:#9AA3B2;--border:#262B36;--wa:#25D366;--danger:#FF5C5C;}
     *{box-sizing:border-box;margin:0;padding:0;}
@@ -86,6 +82,10 @@
       return data;
     }
 
+    // external_id da instalação do app na Appmax (obrigatório p/ tokenizar).
+    // Passe na URL: /assinar?eid=SEU_EXTERNAL_ID
+    const EXTERNAL_ID = new URLSearchParams(location.search).get('eid') || '';
+
     async function init() {
       if (!token) { $('need-login').style.display = 'block'; return; }
       $('checkout').style.display = 'block';
@@ -94,16 +94,19 @@
         PLANS = d.plans || [];
         $('plan').innerHTML = PLANS.map((p) => `<option value="${p.id}">${p.label} — R$ ${Number(p.price).toFixed(2)}</option>`).join('');
       } catch (e) {}
-    }
 
-    // Cartão recorrente: o Appmax JS tokeniza no submit e devolve o token.
-    // O nome do campo pode variar conforme a versão do Appmax JS — ajustamos no teste sandbox.
-    $('payment-form').addEventListener('appmax:tokenized', (ev) => sendCard(ev.detail && (ev.detail.token || ev.detail)));
-    $('payment-form').addEventListener('submit', (ev) => {
-      // Se o Appmax JS já injetou um token no form, usamos; senão deixamos o Appmax JS agir.
-      const hidden = $('payment-form').querySelector('input[name="token"], [appmax-token]');
-      if (hidden && hidden.value) { ev.preventDefault(); sendCard(hidden.value); }
-    });
+      // Inicializa o Appmax JS: onSuccess({ ip, token }) devolve o token do cartão.
+      if (window.AppmaxScripts) {
+        window.AppmaxScripts.init(
+          (data) => { if (data && data.token) sendCard(data.token); },
+          (err) => { $('pay-msg').className = 'msg err'; $('pay-msg').textContent = 'Erro no cartão: ' + (err && err.message || err); },
+          EXTERNAL_ID
+        );
+      } else {
+        $('pay-msg').className = 'msg err';
+        $('pay-msg').textContent = 'Não foi possível carregar o pagamento (Appmax JS).';
+      }
+    }
 
     async function sendCard(cardToken) {
       const msg = $('pay-msg');
