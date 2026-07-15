@@ -7,7 +7,9 @@ Dois modos, escolhidos por variáveis de ambiente:
 
 Se nada estiver configurado, as funções apenas não enviam (sem erro).
 """
+import html as html_lib
 import os
+import re
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
@@ -93,6 +95,19 @@ def _plain_from() -> str:
     return MAIL_FROM
 
 
+def _html_to_text(html: str) -> str:
+    """Versão em texto puro do e-mail (melhora a entrega; evita filtro de spam)."""
+    text = re.sub(r"(?is)<(script|style).*?</\1>", "", html)
+    text = re.sub(r"(?i)<br\s*/?>", "\n", text)
+    text = re.sub(r"(?i)</(p|div|h[1-6]|li|tr)>", "\n", text)
+    text = re.sub(r"(?i)<li[^>]*>", "• ", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html_lib.unescape(text)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n\s*\n\s*\n+", "\n\n", text)
+    return text.strip()
+
+
 def _send_raw(to: str, subject: str, html: str) -> str:
     """Envia de fato. Levanta exceção em caso de falha (não engole o erro).
 
@@ -107,8 +122,10 @@ def _send_raw(to: str, subject: str, html: str) -> str:
             json={
                 "sender": {"name": name, "email": email},
                 "to": [{"email": to}],
+                "replyTo": {"email": email, "name": name},
                 "subject": subject,
                 "htmlContent": html,
+                "textContent": _html_to_text(html),
             },
             timeout=20,
         )
