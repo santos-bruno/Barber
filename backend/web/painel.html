@@ -169,7 +169,8 @@
       try {
         const r = await api('/email-test?to=' + encodeURIComponent(to), 'POST');
         if (r.ok) {
-          out.innerHTML = '<span style="color:var(--wa)">✓ Enviado! Confira a caixa de entrada e o spam de ' + to + '.</span>';
+          out.innerHTML = '<span style="color:var(--wa)">✓ Brevo aceitou o envio.</span> ' + (r.detail ? '<span class="muted">(' + r.detail + ')</span>' : '') +
+            '<br><span class="muted">Se não chegar em ~2 min (nem no spam) e não aparecer em <b>Transactional → Logs</b> no Brevo, sua conta Brevo provavelmente ainda está <b>em análise/precisa ser ativada</b> — veja instruções abaixo.</span>';
         } else {
           out.innerHTML = '<span style="color:var(--danger)">✕ Falhou:</span> ' + (r.error || 'erro desconhecido');
         }

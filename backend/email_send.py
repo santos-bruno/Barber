@@ -77,8 +77,8 @@ def send_test(to: str) -> dict:
         "<p>Se você recebeu este e-mail, o envio está funcionando.</p></div>"
     )
     try:
-        _send_raw(to, "Teste de e-mail — Agenda Barber 💈", html)
-        return {"ok": True}
+        detail = _send_raw(to, "Teste de e-mail — Agenda Barber 💈", html)
+        return {"ok": True, "detail": detail}
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
@@ -90,8 +90,11 @@ def _plain_from() -> str:
     return MAIL_FROM
 
 
-def _send_raw(to: str, subject: str, html: str) -> None:
-    """Envia de fato. Levanta exceção em caso de falha (não engole o erro)."""
+def _send_raw(to: str, subject: str, html: str) -> str:
+    """Envia de fato. Levanta exceção em caso de falha (não engole o erro).
+
+    Devolve um detalhe do provedor (ex.: messageId do Brevo) para diagnóstico.
+    """
     if BREVO_API_KEY:
         # API HTTP do Brevo (porta 443) — funciona no Render, que bloqueia SMTP.
         name, email = _from_parts()
@@ -108,7 +111,11 @@ def _send_raw(to: str, subject: str, html: str) -> None:
         )
         if r.status_code >= 300:
             raise RuntimeError(f"Brevo {r.status_code}: {r.text}")
-        return
+        try:
+            mid = r.json().get("messageId", "")
+        except Exception:  # noqa: BLE001
+            mid = ""
+        return f"Brevo {r.status_code} · messageId={mid}"
 
     if RESEND_API_KEY:
         r = httpx.post(
@@ -119,7 +126,7 @@ def _send_raw(to: str, subject: str, html: str) -> None:
         )
         if r.status_code >= 300:
             raise RuntimeError(f"Resend {r.status_code}: {r.text}")
-        return
+        return f"Resend {r.status_code}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -136,6 +143,7 @@ def _send_raw(to: str, subject: str, html: str) -> None:
             s.starttls(context=ctx)
             s.login(SMTP_USER, SMTP_PASSWORD)
             s.sendmail(_plain_from(), [to], msg.as_string())
+    return f"SMTP {SMTP_HOST}:{SMTP_PORT} ok"
 
 
 def send_email(to: str, subject: str, html: str) -> bool:
