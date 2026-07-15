@@ -15,6 +15,7 @@ from email.mime.text import MIMEText
 
 import httpx
 
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
@@ -27,12 +28,27 @@ APP_BASE_URL = os.getenv(
 
 
 def is_configured() -> bool:
-    return bool(RESEND_API_KEY or (SMTP_HOST and SMTP_USER and SMTP_PASSWORD))
+    return bool(
+        BREVO_API_KEY
+        or RESEND_API_KEY
+        or (SMTP_HOST and SMTP_USER and SMTP_PASSWORD)
+    )
+
+
+def _from_parts() -> tuple:
+    """Devolve (nome, email) a partir de MAIL_FROM ('Nome <email>' ou 'email')."""
+    if "<" in MAIL_FROM and ">" in MAIL_FROM:
+        name = MAIL_FROM.split("<", 1)[0].strip().strip('"')
+        email = MAIL_FROM.split("<", 1)[1].split(">", 1)[0].strip()
+        return (name or "Agenda Barber", email)
+    return ("Agenda Barber", MAIL_FROM.strip())
 
 
 def diagnose() -> dict:
     """Estado da configuração de e-mail (sem expor segredos)."""
-    if RESEND_API_KEY:
+    if BREVO_API_KEY:
+        mode = "brevo-api"
+    elif RESEND_API_KEY:
         mode = "resend"
     elif SMTP_HOST and SMTP_USER and SMTP_PASSWORD:
         mode = "smtp"
@@ -47,13 +63,14 @@ def diagnose() -> dict:
         "smtp_user": SMTP_USER or None,
         "smtp_password_set": bool(SMTP_PASSWORD),
         "resend_key_set": bool(RESEND_API_KEY),
+        "brevo_key_set": bool(BREVO_API_KEY),
     }
 
 
 def send_test(to: str) -> dict:
     """Envia um e-mail de teste e devolve o resultado real (com o erro, se houver)."""
     if not is_configured():
-        return {"ok": False, "error": "E-mail não configurado. Defina SMTP_* ou RESEND_API_KEY no Render."}
+        return {"ok": False, "error": "E-mail não configurado. Defina BREVO_API_KEY (ou RESEND_API_KEY / SMTP_*) no Render."}
     html = (
         "<div style='font-family:Arial,sans-serif;padding:16px'>"
         "<h2 style='color:#F0C24B'>✅ Teste do Agenda Barber</h2>"
@@ -75,6 +92,24 @@ def _plain_from() -> str:
 
 def _send_raw(to: str, subject: str, html: str) -> None:
     """Envia de fato. Levanta exceção em caso de falha (não engole o erro)."""
+    if BREVO_API_KEY:
+        # API HTTP do Brevo (porta 443) — funciona no Render, que bloqueia SMTP.
+        name, email = _from_parts()
+        r = httpx.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={"api-key": BREVO_API_KEY, "accept": "application/json"},
+            json={
+                "sender": {"name": name, "email": email},
+                "to": [{"email": to}],
+                "subject": subject,
+                "htmlContent": html,
+            },
+            timeout=20,
+        )
+        if r.status_code >= 300:
+            raise RuntimeError(f"Brevo {r.status_code}: {r.text}")
+        return
+
     if RESEND_API_KEY:
         r = httpx.post(
             "https://api.resend.com/emails",
