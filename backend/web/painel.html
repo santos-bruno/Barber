@@ -151,12 +151,17 @@
           box.innerHTML = '<span style="color:var(--danger)">✕ E-mail NÃO configurado.</span> Defina as variáveis SMTP_* (ou RESEND_API_KEY) no Render.';
           return;
         }
+        const esc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const senderEmail = esc(s.sender_email);
+        const badSender = /resend\.dev|example\.com/.test(s.sender_email || '');
+        const senderLine = `remetente <b>${esc(s.sender_name)}</b> &lt;<b>${senderEmail}</b>&gt;` +
+          (badSender ? `<br><span style="color:var(--danger)">⚠️ Esse remetente é um exemplo e NÃO é válido. Troque a variável <b>MAIL_FROM</b> no Render para o e-mail verificado no Brevo (ex.: <b>Agenda Barber &lt;brunoadpn88@gmail.com&gt;</b>).</span>` : '');
         if (s.mode === 'brevo-api') {
-          box.innerHTML = `✓ Modo <b>Brevo (API HTTP)</b> · remetente <b>${s.from}</b> — recomendado, funciona no Render.`;
+          box.innerHTML = `✓ Modo <b>Brevo (API HTTP)</b> · ${senderLine}`;
         } else if (s.mode === 'resend') {
-          box.innerHTML = `✓ Modo <b>Resend</b> · remetente <b>${s.from}</b>`;
+          box.innerHTML = `✓ Modo <b>Resend</b> · ${senderLine}`;
         } else if (s.mode === 'smtp') {
-          box.innerHTML = `⚠️ Modo <b>SMTP</b> · servidor <b>${s.smtp_host}:${s.smtp_port}</b> · login <b>${s.smtp_user}</b> · senha ${s.smtp_password_set ? 'definida' : '<span style="color:var(--danger)">FALTANDO</span>'} · remetente <b>${s.from}</b><br><span style="color:#E8A33D">Atenção: o Render bloqueia SMTP. Use BREVO_API_KEY (API HTTP) em vez de SMTP_*.</span>`;
+          box.innerHTML = `⚠️ Modo <b>SMTP</b> · servidor <b>${esc(s.smtp_host)}:${s.smtp_port}</b> · login <b>${esc(s.smtp_user)}</b> · senha ${s.smtp_password_set ? 'definida' : '<span style="color:var(--danger)">FALTANDO</span>'} · ${senderLine}<br><span style="color:#E8A33D">Atenção: o Render bloqueia SMTP. Use BREVO_API_KEY (API HTTP) em vez de SMTP_*.</span>`;
         }
       } catch (e) { box.textContent = 'Não foi possível ler o status.'; }
     }

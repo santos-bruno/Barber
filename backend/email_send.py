@@ -54,10 +54,13 @@ def diagnose() -> dict:
         mode = "smtp"
     else:
         mode = "nenhum"
+    sender_name, sender_email = _from_parts()
     return {
         "configured": is_configured(),
         "mode": mode,
         "from": MAIL_FROM,
+        "sender_name": sender_name,
+        "sender_email": sender_email,
         "smtp_host": SMTP_HOST or None,
         "smtp_port": SMTP_PORT,
         "smtp_user": SMTP_USER or None,
