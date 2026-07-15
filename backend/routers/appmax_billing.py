@@ -32,6 +32,28 @@ APP_BASE_URL = os.getenv("APP_BASE_URL", "https://agenda-barber-o0to.onrender.co
 _connect_states: dict = {}
 
 
+@router.get("/debug")
+def debug(key: str = ""):
+    """Diagnóstico da configuração do app (sem expor segredos)."""
+    if not SUPERADMIN_KEY or key != SUPERADMIN_KEY:
+        raise HTTPException(status_code=401, detail="Acesso negado.")
+    info = {
+        "base_url": appmax.BASE_URL,
+        "auth_url": appmax.AUTH_URL,
+        "authorize_url": appmax.AUTHORIZE_URL,
+        "app_id": appmax.APP_ID,  # não é secreto (UUID/ID numérico)
+        "app_client_id_set": bool(appmax.APP_CLIENT_ID),
+        "app_client_secret_set": bool(appmax.APP_CLIENT_SECRET),
+        "merchant_configured": appmax.is_configured(),
+    }
+    try:
+        tok = appmax._app_token()
+        info["app_oauth"] = "ok" if tok else "sem access_token"
+    except Exception as e:  # noqa: BLE001
+        info["app_oauth"] = f"FALHOU: {e}"
+    return info
+
+
 @router.get("/connect")
 def connect(key: str = ""):
     """Inicia a instalação do app: autoriza e redireciona o dono para a Appmax."""
