@@ -68,14 +68,6 @@
       <div class="msg" id="pay-msg"></div>
       <p class="muted" style="margin-top:10px">Cobrança recorrente (renova automaticamente). Cancele quando quiser.</p>
     </form>
-
-    <div class="sep">ou</div>
-    <div class="card">
-      <strong>Prefere pix / boleto / link?</strong>
-      <p class="muted" style="margin-top:4px">Abrimos o checkout hospedado da Appmax.</p>
-      <button class="btn btn-ghost" id="link-btn">Gerar link de pagamento</button>
-      <div class="msg" id="link-msg"></div>
-    </div>
   </div>
 
   <script>
@@ -103,16 +95,6 @@
         $('plan').innerHTML = PLANS.map((p) => `<option value="${p.id}">${p.label} — R$ ${Number(p.price).toFixed(2)}</option>`).join('');
       } catch (e) {}
     }
-
-    // Link de pagamento hospedado (funciona já; a barbearia é liberada pelo webhook)
-    $('link-btn').onclick = async () => {
-      const msg = $('link-msg'); msg.textContent = 'Gerando…'; msg.className = 'msg';
-      try {
-        const r = await api('/billing/appmax/subscribe', { method: 'POST', body: JSON.stringify({ plan: $('plan').value, cpf_cnpj: $('doc').value.replace(/\D/g, '') }) });
-        if (r.checkout_url) { window.location.href = r.checkout_url; }
-        else { msg.className = 'msg err'; msg.textContent = 'Não recebi o link de pagamento.'; }
-      } catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
-    };
 
     // Cartão recorrente: o Appmax JS tokeniza no submit e devolve o token.
     // O nome do campo pode variar conforme a versão do Appmax JS — ajustamos no teste sandbox.

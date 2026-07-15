@@ -113,40 +113,6 @@ def status(_owner: models.User = Depends(require_owner)):
     return {"configured": appmax.is_configured()}
 
 
-@router.post("/subscribe")
-def subscribe_link(
-    payload: schemas.SubscribeInput,
-    tenant: models.Tenant = Depends(get_current_tenant),
-    _owner: models.User = Depends(require_owner),
-    db: Session = Depends(get_db),
-):
-    """Gera um link de pagamento hospedado da Appmax e devolve o checkout_url.
-
-    Caminho mais simples (a Appmax cuida do cartão/pix/boleto). A liberação da
-    barbearia vem pelo webhook (order_approved).
-    """
-    plan = get_plan(payload.plan)
-    if not plan:
-        raise HTTPException(status_code=400, detail="Plano inválido.")
-    if not appmax.is_configured():
-        raise HTTPException(status_code=503, detail="Pagamento Appmax não configurado.")
-    value_cents = int(round(plan["price"] * 100))
-    try:
-        link = appmax.create_payment_link(
-            name=f"{plan['label']} — {tenant.name}",
-            value_cents=value_cents,
-            description=plan["description"],
-        )
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=502, detail=f"Erro na Appmax: {e}")
-
-    tenant.plan = plan["id"]
-    if link.get("id"):
-        tenant.appmax_order_id = str(link["id"])  # p/ correlacionar no webhook
-    db.commit()
-    return {"checkout_url": link.get("checkout_url", ""), "id": link.get("id")}
-
-
 @router.post("/checkout", response_model=schemas.TenantOut)
 def checkout(
     payload: schemas.AppmaxCheckoutInput,
@@ -169,8 +135,6 @@ def checkout(
     email = owner.email if owner else f"{tenant.slug}@exemplo.com"
     full = (owner.name if owner else tenant.name).strip()
     first, _, last = full.partition(" ")
-    value_cents = int(round(plan["price"] * 100))
-    interval = "year" if plan["id"] == "anual" else "month"
     ip = request.client.host if request.client else "0.0.0.0"
 
     try:
@@ -184,17 +148,17 @@ def checkout(
         )
         order_id = appmax.create_order(
             customer_id=customer_id,
-            value_cents=value_cents,
+            value_reais=plan["price"],
             product_name=plan["description"],
             sku=f"plano-{plan['id']}",
         )
-        appmax.pay_credit_card_recurring(
+        appmax.pay_credit_card(
             order_id=order_id,
             customer_id=customer_id,
             card_token=payload.card_token,
             holder_name=payload.holder_name,
             holder_document_number=payload.cpf_cnpj,
-            interval=interval,
+            recurrence=True,
         )
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Erro na Appmax: {e}")
