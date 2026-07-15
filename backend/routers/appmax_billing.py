@@ -6,10 +6,12 @@ Endpoints:
   POST /billing/appmax/checkout  -> cria cliente+pedido+pagamento recorrente (token do Appmax JS)
 """
 import os
+import time
 import uuid
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 import appmax
@@ -23,6 +25,67 @@ router = APIRouter(prefix="/billing/appmax", tags=["appmax"])
 
 # Token opcional para validar o webhook (configure o mesmo no app da Appmax).
 APPMAX_WEBHOOK_TOKEN = os.getenv("APPMAX_WEBHOOK_TOKEN", "")
+SUPERADMIN_KEY = os.getenv("SUPERADMIN_KEY", "")
+APP_BASE_URL = os.getenv("APP_BASE_URL", "https://agenda-barber-o0to.onrender.com").rstrip("/")
+
+# States efêmeros do fluxo de conexão (instalação do app).
+_connect_states: dict = {}
+
+
+@router.get("/connect")
+def connect(key: str = ""):
+    """Inicia a instalação do app: autoriza e redireciona o dono para a Appmax."""
+    if not SUPERADMIN_KEY or key != SUPERADMIN_KEY:
+        raise HTTPException(status_code=401, detail="Acesso negado.")
+    if not appmax.app_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Defina APPMAX_APP_ID, APPMAX_APP_CLIENT_ID e APPMAX_APP_CLIENT_SECRET.",
+        )
+    state = uuid.uuid4().hex
+    _connect_states[state] = time.time()
+    url_callback = f"{APP_BASE_URL}/billing/appmax/callback?state={state}"
+    try:
+        hash_token = appmax.app_authorize("agendabarber", url_callback)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Erro na Appmax: {e}")
+    return RedirectResponse(appmax.AUTHORIZE_URL.rstrip("/") + "/" + hash_token)
+
+
+@router.get("/callback", response_class=HTMLResponse)
+def connect_callback(state: str = "", token: str = ""):
+    """Recebe o retorno da autorização e gera as credenciais do merchant."""
+    now = time.time()
+    # limpa states velhos (>1h)
+    for s in [s for s, t in _connect_states.items() if now - t > 3600]:
+        _connect_states.pop(s, None)
+    if not state or state not in _connect_states:
+        return HTMLResponse("<h2>Sessão de conexão expirada. Recomece.</h2>", status_code=400)
+    _connect_states.pop(state, None)
+    if not token:
+        return HTMLResponse("<h2>Autorização não concluída (sem token).</h2>", status_code=400)
+    try:
+        client = appmax.app_generate_merchant(token)
+    except Exception as e:  # noqa: BLE001
+        return HTMLResponse(f"<h2>Erro ao gerar credenciais</h2><pre>{e}</pre>", status_code=502)
+    cid = client.get("client_id", "")
+    csecret = client.get("client_secret", "")
+    return HTMLResponse(
+        f"""<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Credenciais do merchant — Appmax</title>
+        <style>body{{font-family:Arial,sans-serif;background:#0F1115;color:#F4F6FB;max-width:640px;margin:0 auto;padding:24px;line-height:1.5}}
+        code{{background:#1E222B;border:1px solid #262B36;border-radius:8px;padding:10px;display:block;margin:6px 0;word-break:break-all;font-size:15px}}
+        .g{{color:#F0C24B;font-weight:800}}</style></head><body>
+        <h2>✅ App conectado!</h2>
+        <p>Copie as <b>credenciais do merchant</b> abaixo e cole no Render (Environment):</p>
+        <p class="g">APPMAX_MERCHANT_CLIENT_ID</p><code>{cid}</code>
+        <p class="g">APPMAX_MERCHANT_CLIENT_SECRET</p><code>{csecret}</code>
+        <p style="margin-top:18px">Depois, <b>apague</b> a variável <code style="display:inline">APPMAX_ACCESS_TOKEN</code>, salve e aguarde o deploy.
+        Então teste o pagamento em <a href="/assinar" style="color:#F0C24B">/assinar</a>.</p>
+        <p style="color:#9AA3B2;font-size:13px">Guarde essas credenciais com segurança — elas não serão exibidas de novo.</p>
+        </body></html>"""
+    )
 
 # Eventos da Appmax que aprovam/reprovam a assinatura (schema oficial do webhook).
 _APPROVE = {

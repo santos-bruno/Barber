@@ -27,6 +27,64 @@ MERCHANT_CLIENT_SECRET = os.getenv("APPMAX_MERCHANT_CLIENT_SECRET", "")
 AUTH_URL = os.getenv("APPMAX_AUTH_URL", "https://auth.appmax.com.br/oauth2/token")
 BASE_URL = os.getenv("APPMAX_BASE_URL", "https://api.appmax.com.br").rstrip("/")
 
+# Credenciais do APP (para o fluxo de instalação que gera as credenciais do merchant).
+APP_ID = os.getenv("APPMAX_APP_ID", "")  # UUID do app
+APP_CLIENT_ID = os.getenv("APPMAX_APP_CLIENT_ID", "")
+APP_CLIENT_SECRET = os.getenv("APPMAX_APP_CLIENT_SECRET", "")
+AUTHORIZE_URL = os.getenv(
+    "APPMAX_AUTHORIZE_URL",
+    "https://breakingcode.sandboxappmax.com.br/appstore/integration/",
+)
+
+
+def app_configured() -> bool:
+    return bool(APP_ID and APP_CLIENT_ID and APP_CLIENT_SECRET)
+
+
+def _app_token() -> str:
+    """Token OAuth do APP (usado só no fluxo de instalação)."""
+    r = httpx.post(
+        AUTH_URL,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={
+            "grant_type": "client_credentials",
+            "client_id": APP_CLIENT_ID,
+            "client_secret": APP_CLIENT_SECRET,
+        },
+        timeout=30,
+    )
+    if r.status_code >= 300:
+        raise RuntimeError(f"Appmax app auth {r.status_code}: {r.text}")
+    return r.json()["access_token"]
+
+
+def app_authorize(external_key: str, url_callback: str) -> str:
+    """Gera o hash de autorização. Retorna o hash p/ redirecionar o merchant."""
+    token = _app_token()
+    r = httpx.post(
+        f"{BASE_URL}/app/authorize",
+        headers={"Authorization": f"Bearer {token}", "content-type": "application/json"},
+        json={"app_id": APP_ID, "external_key": external_key, "url_callback": url_callback},
+        timeout=30,
+    )
+    if r.status_code >= 300:
+        raise RuntimeError(f"Appmax /app/authorize {r.status_code}: {r.text}")
+    return r.json()["data"]["token"]
+
+
+def app_generate_merchant(hash_token: str) -> dict:
+    """Troca o hash pelas credenciais do merchant (dispara o health-check)."""
+    token = _app_token()
+    r = httpx.post(
+        f"{BASE_URL}/app/client/generate",
+        headers={"Authorization": f"Bearer {token}", "content-type": "application/json"},
+        json={"token": hash_token},
+        timeout=30,
+    )
+    if r.status_code >= 300:
+        raise RuntimeError(f"Appmax /app/client/generate {r.status_code}: {r.text}")
+    return r.json()["data"]["client"]  # {client_id, client_secret}
+
 _token_cache = {"value": "", "exp": 0.0}
 
 
