@@ -40,7 +40,7 @@ services:
       - key: APP_BASE_URL
         value: https://agenda-barber-o0to.onrender.com   # usado nos links do e-mail
       - key: MAIL_FROM
-        value: Agenda Barber <onboarding@resend.dev>     # troque pelo seu remetente verificado
+        value: Agenda Barber <brunoadpn88@gmail.com>     # remetente verificado no Brevo
       - key: BREVO_API_KEY
         sync: false                  # chave da API HTTP do Brevo (recomendado; SMTP e' bloqueado no Render)
       - key: RESEND_API_KEY
