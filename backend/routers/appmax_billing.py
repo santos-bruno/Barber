@@ -142,6 +142,8 @@ def checkout(
     first, _, last = full.partition(" ")
     ip = request.client.host if request.client else "0.0.0.0"
 
+    value_cents = int(round(plan["price"] * 100))
+    interval = "year" if plan["id"] == "anual" else "month"
     try:
         customer_id = appmax.create_customer(
             first_name=first,
@@ -153,17 +155,24 @@ def checkout(
         )
         order_id = appmax.create_order(
             customer_id=customer_id,
-            value_reais=plan["price"],
+            value_cents=value_cents,
             product_name=plan["description"],
             sku=f"plano-{plan['id']}",
+        )
+        card_token = appmax.tokenize_card(
+            number=payload.card_number,
+            cvv=payload.card_cvv,
+            expiration_month=payload.card_exp_month,
+            expiration_year=payload.card_exp_year,
+            holder_name=payload.holder_name,
         )
         appmax.pay_credit_card(
             order_id=order_id,
             customer_id=customer_id,
-            card_token=payload.card_token,
+            card_token=card_token,
             holder_name=payload.holder_name,
             holder_document_number=payload.cpf_cnpj,
-            recurrence=True,
+            interval=interval,
         )
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Erro na Appmax: {e}")

@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="/favicon.png" />
   <title>Assinar — Agenda Barber</title>
-  <!-- Appmax JS (obrigatório): tokeniza o cartão no navegador e coleta o IP. -->
-  <script src="https://scripts.appmax.com.br/appmax.min.js"></script>
   <style>
     :root{--bg:#0F1115;--surface:#171A21;--surface2:#1E222B;--primary:#F0C24B;--gold1:#F6D06B;--gold2:#D99A2B;--text:#F4F6FB;--muted:#9AA3B2;--border:#262B36;--wa:#25D366;--danger:#FF5C5C;}
     *{box-sizing:border-box;margin:0;padding:0;}
@@ -48,19 +46,19 @@
       <input id="doc" placeholder="Somente números" inputmode="numeric" />
     </div>
 
-    <!-- Cartão via Appmax JS (tokeniza no navegador; o cartão não passa pelo servidor) -->
-    <form id="payment-form" class="card" data-appmax-checkout>
+    <!-- Cartão de crédito (o servidor tokeniza com segurança na Appmax) -->
+    <form id="payment-form" class="card" onsubmit="return false">
       <strong>Cartão de crédito</strong>
       <label>Número do cartão</label>
-      <input id="card-number" appmax-form-element="number" inputmode="numeric" placeholder="0000 0000 0000 0000" required />
+      <input id="card-number" inputmode="numeric" placeholder="0000 0000 0000 0000" required />
       <label>Nome do titular (como no cartão)</label>
-      <input id="holder" appmax-form-element="holder_name" placeholder="NOME COMPLETO" required />
+      <input id="holder" placeholder="NOME COMPLETO" required />
       <div class="row">
-        <div style="flex:1"><label>Mês</label><input appmax-form-element="expiration_month" placeholder="MM" inputmode="numeric" required /></div>
-        <div style="flex:1"><label>Ano</label><input appmax-form-element="expiration_year" placeholder="AA" inputmode="numeric" required /></div>
-        <div style="flex:1"><label>CVV</label><input appmax-form-element="cvv" placeholder="123" inputmode="numeric" required /></div>
+        <div style="flex:1"><label>Mês</label><input id="exp-month" placeholder="MM" inputmode="numeric" required /></div>
+        <div style="flex:1"><label>Ano</label><input id="exp-year" placeholder="AA" inputmode="numeric" required /></div>
+        <div style="flex:1"><label>CVV</label><input id="cvv" placeholder="123" inputmode="numeric" required /></div>
       </div>
-      <button type="submit" class="btn btn-primary" id="pay-btn">Assinar no cartão</button>
+      <button type="submit" class="btn btn-primary" id="pay-btn" onclick="pay()">Assinar no cartão</button>
       <div class="msg" id="pay-msg"></div>
       <p class="muted" style="margin-top:10px">Cobrança recorrente (renova automaticamente). Cancele quando quiser.</p>
     </form>
@@ -82,10 +80,6 @@
       return data;
     }
 
-    // external_id da instalação do app na Appmax (obrigatório p/ tokenizar).
-    // Passe na URL: /assinar?eid=SEU_EXTERNAL_ID
-    const EXTERNAL_ID = new URLSearchParams(location.search).get('eid') || '';
-
     async function init() {
       if (!token) { $('need-login').style.display = 'block'; return; }
       $('checkout').style.display = 'block';
@@ -94,30 +88,25 @@
         PLANS = d.plans || [];
         $('plan').innerHTML = PLANS.map((p) => `<option value="${p.id}">${p.label} — R$ ${Number(p.price).toFixed(2)}</option>`).join('');
       } catch (e) {}
-
-      // Inicializa o Appmax JS: onSuccess({ ip, token }) devolve o token do cartão.
-      if (window.AppmaxScripts) {
-        window.AppmaxScripts.init(
-          (data) => { if (data && data.token) sendCard(data.token); },
-          (err) => { $('pay-msg').className = 'msg err'; $('pay-msg').textContent = 'Erro no cartão: ' + (err && err.message || err); },
-          EXTERNAL_ID
-        );
-      } else {
-        $('pay-msg').className = 'msg err';
-        $('pay-msg').textContent = 'Não foi possível carregar o pagamento (Appmax JS).';
-      }
     }
 
-    async function sendCard(cardToken) {
+    async function pay() {
       const msg = $('pay-msg');
-      if (!cardToken) { msg.className = 'msg err'; msg.textContent = 'Não recebi o token do cartão (verifique o Appmax JS).'; return; }
+      const doc = $('doc').value.replace(/\D/g, '');
+      const num = $('card-number').value.replace(/\s/g, '');
+      if (!doc || !num || !$('holder').value || !$('cvv').value) {
+        msg.className = 'msg err'; msg.textContent = 'Preencha CPF/CNPJ e todos os dados do cartão.'; return;
+      }
       msg.textContent = 'Processando pagamento…'; msg.className = 'msg';
       try {
         await api('/billing/appmax/checkout', { method: 'POST', body: JSON.stringify({
           plan: $('plan').value,
-          card_token: cardToken,
           holder_name: $('holder').value,
-          cpf_cnpj: $('doc').value.replace(/\D/g, ''),
+          cpf_cnpj: doc,
+          card_number: num,
+          card_cvv: $('cvv').value.replace(/\D/g, ''),
+          card_exp_month: $('exp-month').value.replace(/\D/g, ''),
+          card_exp_year: $('exp-year').value.replace(/\D/g, ''),
         }) });
         msg.className = 'msg ok'; msg.textContent = '✓ Assinatura criada! A liberação é confirmada em instantes.';
         setTimeout(() => { window.location.href = '/gerente'; }, 2500);
