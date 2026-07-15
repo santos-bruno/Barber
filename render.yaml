@@ -37,6 +37,12 @@ services:
         generateValue: true          # token gerado p/ validar o webhook (copie p/ o painel Asaas)
       - key: SUPERADMIN_KEY
         sync: false                  # chave do seu painel de assinantes
+      - key: APP_BASE_URL
+        value: https://agenda-barber-o0to.onrender.com   # usado nos links do e-mail
+      - key: MAIL_FROM
+        value: Agenda Barber <onboarding@resend.dev>     # troque pelo seu remetente verificado
+      - key: RESEND_API_KEY
+        sync: false                  # chave do Resend p/ enviar e-mail de boas-vindas (opcional)
 
 databases:
   - name: agenda-barber-db

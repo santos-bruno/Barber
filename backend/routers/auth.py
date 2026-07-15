@@ -3,9 +3,10 @@ import re
 import unicodedata
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+import email_send
 import models
 import schemas
 from database import get_db
@@ -39,7 +40,11 @@ def unique_slug(db: Session, base: str) -> str:
 
 
 @router.post("/register", response_model=schemas.AuthOut, status_code=201)
-def register(payload: schemas.RegisterInput, db: Session = Depends(get_db)):
+def register(
+    payload: schemas.RegisterInput,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     existing = (
         db.query(models.User).filter(models.User.email == payload.email.lower()).first()
     )
@@ -71,6 +76,16 @@ def register(payload: schemas.RegisterInput, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(tenant)
     db.refresh(user)
+
+    # E-mail de boas-vindas (best-effort, em segundo plano).
+    background_tasks.add_task(
+        email_send.send_welcome,
+        user.name,
+        tenant.name,
+        user.email,
+        tenant.slug,
+        TRIAL_DAYS,
+    )
 
     return schemas.AuthOut(token=create_token(user), user=user, tenant=tenant)
 
