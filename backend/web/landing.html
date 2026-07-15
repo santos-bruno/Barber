@@ -215,11 +215,22 @@
           <strong>📧 Enviamos um e-mail de boas-vindas</strong>
           <p style="color:var(--muted);margin-top:6px">Confira a caixa de entrada de <b>${auth.user.email}</b> (e também o <b>spam/lixo eletrônico</b>) — nele estão seu link e os primeiros passos. Se não chegar em alguns minutos, não tem problema: seus dados de acesso são o e-mail e a senha que você acabou de cadastrar.</p>
         </div>` : '';
-      done.innerHTML = emailNote + `
+      const apkUrl = 'https://github.com/santos-bruno/Barber/releases/download/apk-latest/agenda-barber.apk';
+      done.innerHTML = `
+        <div class="panel" style="border-color:var(--primary)">
+          <strong>${fresh ? '✅ Conta criada' : '👋 Bem-vindo de volta'}, ${auth.user.name}!</strong>
+          <p style="color:var(--muted);margin-top:6px">${auth.tenant.name} · ${auth.tenant.subscription_status === 'trial' ? 'período de teste grátis ativo' : 'status: ' + auth.tenant.subscription_status}</p>
+          <p style="margin-top:10px">Escolha por onde entrar:</p>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+            <a class="btn btn-primary" style="width:100%;text-align:center" href="/gerente">💻 Acessar no computador (web)</a>
+            <a class="btn btn-ghost" style="width:100%;text-align:center" href="${apkUrl}">📱 Baixar o app Android (APK)</a>
+            <a class="btn btn-ghost" style="width:100%;text-align:center" href="/guia.pdf" target="_blank">📄 Baixar guia de primeiros passos (PDF)</a>
+          </div>
+          <p class="muted" style="font-size:13px;margin-top:12px">Seu login é <b>${auth.user.email}</b> e a senha que você acabou de criar. O mesmo login funciona no computador e no app.</p>
+        </div>` + emailNote + `
         <div class="panel">
-          <strong>✅ Bem-vindo, ${auth.user.name}!</strong>
-          <p style="color:var(--muted);margin-top:6px">${auth.tenant.name} · status: ${auth.tenant.subscription_status}</p>
-          <label>Seu link de agendamento (divulgue!)</label>
+          <strong>🔗 Seu link de agendamento (divulgue!)</strong>
+          <p class="muted" style="font-size:13.5px;margin-top:4px">Coloque na bio do Instagram e no WhatsApp — os clientes agendam sozinhos.</p>
           <div class="copy"><input id="booklink" readonly value="${link}" /><button class="btn btn-primary btn-sm" onclick="copyLink()">Copiar</button></div>
         </div>
         <div class="panel">

@@ -118,3 +118,22 @@ def owner_panel():
 def manager_web():
     """Versão web para a barbearia gerenciar (agenda, caixa, barbeiros...)."""
     return _serve("gerente.html")
+
+
+@app.get("/guia")
+def guide_page():
+    """Guia de primeiros passos (versão web)."""
+    return _serve("guia.html")
+
+
+@app.get("/guia.pdf")
+def guide_pdf():
+    """Guia de primeiros passos em PDF (download)."""
+    path = os.path.join(WEB_DIR, "guia-agenda-barber.pdf")
+    if os.path.exists(path):
+        return FileResponse(
+            path,
+            media_type="application/pdf",
+            filename="Guia-Agenda-Barber.pdf",
+        )
+    return JSONResponse({"detail": "Guia não encontrado."}, status_code=404)

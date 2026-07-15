@@ -198,6 +198,7 @@ def _welcome_html(owner_name: str, shop_name: str, slug: str, trial_days: int) -
       <ul style="line-height:1.7">
         <li><strong>No computador:</strong> <a href="{gerente}" style="color:#F0C24B">{gerente}</a> (entre com seu e-mail e senha)</li>
         <li><strong>No celular:</strong> baixe o app Android e entre com o mesmo login</li>
+        <li><strong>Guia de primeiros passos (PDF):</strong> <a href="{APP_BASE_URL}/guia.pdf" style="color:#F0C24B">baixar aqui</a></li>
       </ul>
 
       <h3 style="color:#F0C24B">Primeiros passos</h3>

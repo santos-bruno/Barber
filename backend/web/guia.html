@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/favicon.png" />
+  <title>Guia de Primeiros Passos — Agenda Barber</title>
+  <style>
+    :root{--gold1:#F6D06B;--gold2:#D99A2B;--ink:#1B1E27;--muted:#5B6472;--line:#E6E8EE;--soft:#FBFAF7;--wa:#1EA152;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#F3F4F7;line-height:1.6;-webkit-font-smoothing:antialiased;}
+    .page{max-width:820px;margin:0 auto;background:#fff;}
+    .cover{background:linear-gradient(135deg,#141414,#20242E);color:#fff;padding:52px 48px 44px;position:relative;overflow:hidden;}
+    .cover:after{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:linear-gradient(135deg,var(--gold1),var(--gold2));opacity:.18;}
+    .pole{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--gold1),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:20px;}
+    .cover h1{font-size:34px;font-weight:800;letter-spacing:-.5px;line-height:1.15;}
+    .cover .sub{color:#C9CEDA;margin-top:10px;font-size:16px;max-width:520px;}
+    .cover .tag{display:inline-block;margin-top:22px;background:rgba(240,194,75,.16);border:1px solid rgba(240,194,75,.4);color:var(--gold1);font-size:13px;font-weight:700;padding:7px 14px;border-radius:999px;}
+    .body{padding:40px 48px 48px;}
+    h2{font-size:20px;font-weight:800;margin:34px 0 6px;display:flex;align-items:center;gap:10px;}
+    h2 .num{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#141414;font-size:15px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+    h2:first-child{margin-top:0;}
+    p{color:#2C313C;margin:8px 0;}
+    .muted{color:var(--muted);}
+    ul,ol{margin:8px 0 8px 4px;padding-left:22px;}
+    li{margin:5px 0;}
+    .card{background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0;}
+    .access{border:1px solid var(--line);border-radius:14px;padding:18px;background:#fff;}
+    .access .ico{font-size:24px;}
+    .access h3{font-size:16px;margin:8px 0 4px;}
+    .access .url{font-size:13px;color:var(--gold2);font-weight:700;word-break:break-all;}
+    .tip{border-left:4px solid var(--gold2);background:#FFF9EC;padding:12px 16px;border-radius:0 12px 12px 0;margin:14px 0;font-size:14.5px;}
+    .divider{height:1px;background:var(--line);margin:30px 0;}
+    .steps li{margin:8px 0;}
+    .foot{padding:26px 48px 40px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);}
+    .foot b{color:var(--ink);}
+    .contact{display:inline-block;background:var(--wa);color:#fff;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:12px;margin-top:8px;font-size:14px;}
+    a{color:var(--gold2);}
+    @media print{
+      body{background:#fff;}
+      .page{max-width:none;}
+      h2{break-after:avoid;}
+      .card,.access,.tip{break-inside:avoid;}
+      .cover{padding:44px 44px 38px;}
+    }
+    @media (max-width:640px){ .grid{grid-template-columns:1fr;} .cover,.body,.foot{padding-left:26px;padding-right:26px;} }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="cover">
+      <div class="pole">💈</div>
+      <h1>Guia de Primeiros Passos</h1>
+      <div class="sub">Tudo o que você precisa para começar a usar o Agenda Barber e deixar sua barbearia organizada em poucos minutos.</div>
+      <span class="tag">Agenda Barber · Sistema de agendamento para barbearias</span>
+    </div>
+
+    <div class="body">
+      <h2><span class="num">1</span> Como acessar</h2>
+      <p>Você usa o Agenda Barber com o <b>mesmo login e senha</b> (o e-mail e a senha que você cadastrou) em qualquer lugar:</p>
+      <div class="grid">
+        <div class="access">
+          <div class="ico">💻</div>
+          <h3>No computador (web)</h3>
+          <p class="muted" style="font-size:14px;margin:2px 0 6px">Ideal para o dia a dia no balcão. Abra no navegador:</p>
+          <div class="url">seu-site.com/gerente</div>
+        </div>
+        <div class="access">
+          <div class="ico">📱</div>
+          <h3>No celular (app Android)</h3>
+          <p class="muted" style="font-size:14px;margin:2px 0 6px">Baixe o aplicativo e entre com o mesmo login:</p>
+          <div class="url">Link do app enviado no seu e-mail de boas-vindas</div>
+        </div>
+      </div>
+      <div class="tip">💡 <b>Dica:</b> abra a versão web no computador da barbearia e deixe salva nos favoritos. No celular, o app é mais rápido para conferir a agenda ao longo do dia.</div>
+
+      <h2><span class="num">2</span> Configure sua barbearia</h2>
+      <p>Antes de divulgar, deixe as informações certas:</p>
+      <ol class="steps">
+        <li><b>Serviços</b> — confira os cortes/serviços, preços e a duração de cada um.</li>
+        <li><b>Horários de funcionamento</b> — defina os dias e horas que a barbearia abre. Os horários de agendamento aparecem automaticamente para o cliente.</li>
+        <li><b>Seus dados</b> — nome da barbearia, endereço e WhatsApp de contato.</li>
+      </ol>
+
+      <h2><span class="num">3</span> Cadastre seus barbeiros</h2>
+      <p>Cada barbeiro entra com o <b>próprio login</b> e vê <b>apenas os atendimentos dele</b> — sem acesso ao caixa, à loja ou ao lucro.</p>
+      <div class="card">
+        <b>Como fazer:</b>
+        <ul>
+          <li>Vá em <b>Barbeiros</b> → toque em <b>＋ Novo barbeiro</b>.</li>
+          <li>Informe nome, e-mail e uma senha. Passe esses dados para o barbeiro.</li>
+          <li>Em <b>Horários</b>, você pode definir o horário de cada barbeiro (útil quando um trabalha em turnos diferentes).</li>
+          <li>Precisou trocar a senha de alguém? Use o botão <b>🔑</b> ao lado do nome.</li>
+        </ul>
+      </div>
+
+      <h2><span class="num">4</span> Divulgue o link de agendamento</h2>
+      <p>Este é o seu <b>maior ganha-tempo</b>: os clientes agendam sozinhos, sem você precisar responder no WhatsApp.</p>
+      <ul>
+        <li>Copie seu link (algo como <b>seu-site.com/agendar/sua-barbearia</b>).</li>
+        <li>Coloque na <b>bio do Instagram</b>, no <b>status do WhatsApp</b> e nos anúncios.</li>
+        <li>O cliente escolhe o serviço, o profissional, o dia e a hora — e cai direto na sua agenda.</li>
+      </ul>
+
+      <h2><span class="num">5</span> Acompanhe o dia a dia</h2>
+      <ul>
+        <li><b>Agenda</b> — veja todos os agendamentos do dia e da semana.</li>
+        <li><b>Clientes</b> — histórico e planos de assinatura de corte.</li>
+        <li><b>Fluxo de caixa</b> — entradas e saídas, para saber quanto entrou no mês.</li>
+        <li><b>Loja / Estoque</b> — controle de produtos e vendas (opcional).</li>
+      </ul>
+
+      <div class="divider"></div>
+
+      <h2><span class="num">★</span> Planos de assinatura de corte</h2>
+      <p>Quer fidelizar? Crie planos como <b>"4 cortes no mês"</b> com dias e horários permitidos. O cliente assina, e o sistema controla quantos cortes ele já usou.</p>
+
+      <div class="tip">🔒 <b>Importante:</b> mesmo sem receber o e-mail de boas-vindas, você <b>nunca fica travado</b>. Seu acesso é sempre o e-mail e a senha que você cadastrou. É só entrar em <b>/gerente</b> no computador ou no app.</div>
+    </div>
+
+    <div class="foot">
+      <p><b>Precisa de ajuda?</b> Fale com o suporte pelo WhatsApp que a gente te acompanha nos primeiros passos.</p>
+      <a class="contact" href="https://wa.me/5593992078226">💬 Suporte no WhatsApp</a>
+      <p style="margin-top:18px">Agenda Barber — sistema de agendamento e gestão para barbearias. Desenvolvido por Bruno.</p>
+    </div>
+  </div>
+</body>
+</html>
