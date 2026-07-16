@@ -166,6 +166,102 @@ def _post(path: str, payload: dict) -> dict:
     return r.json().get("data", {})
 
 
+# =====================================================================
+# API v3 clássica (admin.appmax.com.br/api/v3) — integração direta de um
+# único lojista, autenticada por "access-token" no corpo de cada request.
+# É o caminho para quem tem um token de lojista (suporte Appmax) e NÃO usa o
+# fluxo de instalação/appstore.
+# =====================================================================
+V3_URL = os.getenv("APPMAX_V3_URL", "https://admin.appmax.com.br/api/v3").rstrip("/")
+V3_TOKEN = os.getenv("APPMAX_V3_TOKEN", "")
+
+
+def v3_configured() -> bool:
+    return bool(V3_TOKEN)
+
+
+def _v3_post(path: str, body: dict, token: str = "") -> dict:
+    """POST na API v3. Devolve o JSON completo (com 'success'/'data'). Levanta
+    RuntimeError com o corpo cru em caso de erro HTTP."""
+    payload = {"access-token": token or V3_TOKEN, **body}
+    r = httpx.post(
+        f"{V3_URL}{path}",
+        headers={"accept": "application/json", "content-type": "application/json"},
+        json=payload,
+        timeout=30,
+    )
+    try:
+        data = r.json()
+    except Exception:  # noqa: BLE001
+        data = {"_raw": r.text}
+    if r.status_code >= 300:
+        raise RuntimeError(f"Appmax v3 {path} {r.status_code}: {data}")
+    return data
+
+
+def v3_create_customer(
+    first_name: str, last_name: str, email: str, phone: str,
+    document_number: str = "", token: str = "",
+) -> int:
+    body = {
+        "firstname": first_name or ".",
+        "lastname": last_name or ".",
+        "email": email,
+        "telephone": _only_digits(phone)[-11:] or "00000000000",
+    }
+    doc = _only_digits(document_number)
+    if doc:
+        body["cpf" if len(doc) <= 11 else "cnpj"] = doc
+    data = _v3_post("/customer", body, token)
+    return (data.get("data") or {}).get("id")
+
+
+def v3_create_order(
+    customer_id: int, value_reais: float, product_name: str, sku: str, token: str = ""
+) -> int:
+    body = {
+        "total": round(float(value_reais), 2),
+        "products": [
+            {
+                "sku": sku,
+                "name": product_name,
+                "qty": 1,
+                "price": round(float(value_reais), 2),
+                "digital_product": 1,
+            }
+        ],
+        "customer_id": customer_id,
+        "shipping": 0,
+        "discount": 0,
+    }
+    data = _v3_post("/order", body, token)
+    return (data.get("data") or {}).get("id")
+
+
+def v3_pay_credit_card(
+    order_id: int, customer_id: int, card_number: str, card_cvv: str,
+    card_month: str, card_year: str, holder_name: str, holder_document: str,
+    installments: int = 1, soft_descriptor: str = "AGENDABARBER", token: str = "",
+) -> dict:
+    body = {
+        "cart": {"order_id": order_id},
+        "customer": {"customer_id": customer_id},
+        "payment": {
+            "CreditCard": {
+                "number": _only_digits(card_number),
+                "cvv": _only_digits(card_cvv),
+                "month": int(str(card_month).lstrip("0") or 0),
+                "year": int(card_year),
+                "name": holder_name,
+                "document_number": _only_digits(holder_document),
+                "installments": installments,
+                "soft_descriptor": soft_descriptor[:22],
+            }
+        },
+    }
+    return _v3_post("/payment/credit-card", body, token)
+
+
 def create_customer(
     first_name: str, last_name: str, email: str, phone: str, ip: str, document_number: str = ""
 ) -> int:

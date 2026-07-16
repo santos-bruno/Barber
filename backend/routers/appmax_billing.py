@@ -89,6 +89,37 @@ def try_authorize(key: str = "", app_id: str = "", external_key: str = "agendaba
     }
 
 
+@router.get("/v3-test")
+def v3_test(key: str = "", token: str = ""):
+    """Diagnóstico da API v3 clássica: cria um cliente de teste com o token do
+    lojista e mostra a resposta crua. Se funcionar, esse é o caminho para
+    receber pagamentos (sem o fluxo de instalação/appstore).
+
+    Passe ?token= para testar sem gravar env, ou defina APPMAX_V3_TOKEN.
+        /billing/appmax/v3-test?key=SUA_CHAVE&token=SEU-TOKEN-DE-LOJISTA
+    """
+    if not _admin_ok(key):
+        raise HTTPException(status_code=401, detail="Acesso negado.")
+    tok = token or appmax.V3_TOKEN
+    if not tok:
+        raise HTTPException(status_code=400, detail="Informe ?token= ou defina APPMAX_V3_TOKEN.")
+    try:
+        data = appmax._v3_post(
+            "/customer",
+            {
+                "firstname": "Teste",
+                "lastname": "Agenda Barber",
+                "email": "teste-agendabarber@example.com",
+                "telephone": "51999999999",
+            },
+            tok,
+        )
+        cid = (data.get("data") or {}).get("id")
+        return {"funciona": True, "customer_id": cid, "resposta": data}
+    except Exception as e:  # noqa: BLE001
+        return {"funciona": False, "erro": str(e)}
+
+
 @router.get("/connect")
 def connect(key: str = "", app_id: str = ""):
     """Inicia a instalação do app: autoriza e redireciona o dono para a Appmax.
