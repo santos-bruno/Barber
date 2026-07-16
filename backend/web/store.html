@@ -10,7 +10,8 @@
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;padding:18px;max-width:560px;margin:0 auto;background-image:radial-gradient(900px 380px at 50% -80px, rgba(240,194,75,.13), transparent 60%);}
     header{text-align:center;margin:22px 0 8px;}
-    .badge{width:74px;height:74px;border-radius:20px;margin:0 auto;background:linear-gradient(135deg,var(--gold1),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 12px 30px rgba(217,154,43,.35);}
+    .badge{width:74px;height:74px;border-radius:20px;margin:0 auto;background:linear-gradient(135deg,var(--gold1),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 12px 30px rgba(217,154,43,.35);overflow:hidden;}
+    .badge img{width:100%;height:100%;object-fit:cover;}
     h1{font-size:22px;margin-top:12px;}
     .addr{color:var(--muted);font-size:13px;margin-top:4px;}
     .tabs{display:flex;gap:8px;justify-content:center;margin-top:14px;}
@@ -93,6 +94,7 @@
         biz = await r.json();
         $('biz-name').textContent = biz.nome;
         $('biz-addr').textContent = biz.endereco || '';
+        if (biz.logo_url) { document.querySelector('.badge').innerHTML = `<img src="${biz.logo_url}" alt="" />`; }
         document.title = 'Loja — ' + biz.nome;
         loadProducts();
       } catch (e) { fatal('Não foi possível carregar.'); }

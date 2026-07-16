@@ -6,20 +6,65 @@
   <link rel="icon" href="/favicon.png" />
   <title>Painel do Dono — Agenda Barber</title>
   <style>
-    :root{--bg:#0E1014;--surface:#161922;--surface2:#1C2029;--primary:#F0C24B;--gold1:#F6D06B;--gold2:#D99A2B;--text:#F5F7FB;--muted:#98A2B3;--border:#242A36;--wa:#25D366;--danger:#FF5C5C;--info:#4C8DFF;}
+    :root{--bg:#0E1014;--surface:#161922;--surface2:#1C2029;--primary:#F0C24B;--gold1:#F6D06B;--gold2:#D99A2B;--text:#F5F7FB;--muted:#98A2B3;--border:#242A36;--wa:#25D366;--danger:#FF5C5C;--info:#4C8DFF;--ring:rgba(240,194,75,.28);}
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;padding:16px;max-width:1000px;margin:0 auto;-webkit-font-smoothing:antialiased;}
-    header{display:flex;align-items:center;gap:12px;padding:14px 0 20px;}
-    .mark{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,var(--gold1),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:23px;box-shadow:0 10px 24px rgba(217,154,43,.38);}
-    h1{font-size:20px;font-weight:820;letter-spacing:-.3px;}
-    .card{background:linear-gradient(180deg,var(--surface),#12151d);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:0 12px 32px rgba(0,0,0,.26);}
-    input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--text);font-size:16px;margin-top:10px;transition:border-color .12s, box-shadow .12s;}
-    input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px rgba(240,194,75,.28);}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;}
     button{border:none;border-radius:11px;font-weight:750;cursor:pointer;transition:transform .1s, filter .12s;}
     button:active{transform:translateY(1px);}
-    .btn-primary{background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#191307;padding:14px 18px;font-size:15px;width:100%;margin-top:14px;box-shadow:0 10px 24px rgba(217,154,43,.3);}
-    .btn-primary:hover{filter:brightness(1.05);}
-    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0;}
+    input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:13px;color:var(--text);font-size:15px;transition:border-color .12s, box-shadow .12s;}
+    input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--ring);}
+    .gold{background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#191307;box-shadow:0 8px 20px rgba(217,154,43,.3);}
+    .gold:hover{filter:brightness(1.05);}
+    .card{background:linear-gradient(180deg,var(--surface),#12151d);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:0 12px 32px rgba(0,0,0,.26);}
+    .muted{color:var(--muted);} .err{color:var(--danger);margin-top:10px;}
+
+    /* LOGIN */
+    #login{max-width:410px;margin:70px auto;box-shadow:0 30px 80px rgba(0,0,0,.5);
+      background-image:radial-gradient(600px 300px at 80% -80px, rgba(240,194,75,.10), transparent 60%);}
+    .brand-c{display:flex;align-items:center;gap:11px;justify-content:center;margin-bottom:16px;}
+    .mark{width:50px;height:50px;border-radius:15px;background:linear-gradient(135deg,var(--gold1),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:27px;box-shadow:0 10px 24px rgba(217,154,43,.4);}
+    .btn-full{width:100%;padding:15px;margin-top:16px;font-size:15px;border-radius:13px;}
+
+    /* LAYOUT */
+    .topbar{display:none;position:sticky;top:0;z-index:15;background:rgba(14,16,20,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:11px 14px;align-items:center;gap:12px;}
+    .burger{background:var(--surface2);color:var(--text);border:1px solid var(--border);width:42px;height:42px;border-radius:11px;font-size:17px;flex-shrink:0;}
+    .tb-title{font-weight:800;font-size:15px;}
+    .sidebar{position:fixed;top:0;left:0;bottom:0;width:262px;display:flex;flex-direction:column;background:linear-gradient(180deg,#13161e,#0C0E12);border-right:1px solid var(--border);padding:18px 14px;overflow-y:auto;z-index:30;}
+    .sidebar::-webkit-scrollbar{width:0;}
+    .content{margin-left:262px;min-height:100vh;}
+    .inner{max-width:1000px;margin:0 auto;padding:28px 24px 70px;}
+    .brand{display:flex;align-items:center;gap:12px;padding:4px 6px 18px;border-bottom:1px solid var(--border);margin-bottom:8px;}
+    .brand-logo{width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,var(--gold1),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 8px 20px rgba(217,154,43,.35);}
+    .brand-txt{display:flex;flex-direction:column;min-width:0;}
+    .brand-txt strong{font-size:16px;letter-spacing:-.2px;}
+    .brand-txt .muted{font-size:11px;}
+    nav{flex:1;padding-top:6px;}
+    .nav-group{margin:16px 0 4px;padding:0 12px;font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#67707F;}
+    .nav-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:11px;color:var(--muted);cursor:pointer;font-weight:650;font-size:14.5px;transition:.12s;margin-top:2px;}
+    .nav-item:hover{background:var(--surface);color:var(--text);}
+    .nav-item.active{background:linear-gradient(135deg,rgba(246,208,107,.16),rgba(217,154,43,.09));color:var(--primary);box-shadow:inset 0 0 0 1px rgba(240,194,75,.22);}
+    .nav-item .ic{width:22px;text-align:center;font-size:16px;}
+    .profile{display:flex;align-items:center;gap:11px;padding:12px 8px 2px;border-top:1px solid var(--border);margin-top:10px;}
+    .avatar{width:40px;height:40px;border-radius:11px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--primary);flex-shrink:0;font-size:15px;}
+    .p-info{display:flex;flex-direction:column;min-width:0;flex:1;}
+    .p-info strong{font-size:13.5px;}
+    .p-info .muted{font-size:11px;}
+    .p-logout{background:var(--surface2);color:var(--muted);border:1px solid var(--border);width:34px;height:34px;border-radius:10px;font-size:15px;flex-shrink:0;}
+    .p-logout:hover{color:var(--danger);border-color:rgba(255,92,92,.5);}
+    .backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:25;}
+    .backdrop.show{display:block;}
+    @media(max-width:860px){
+      .topbar{display:flex;}
+      .sidebar{transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 0 50px rgba(0,0,0,.6);}
+      .sidebar.open{transform:none;}
+      .content{margin-left:0;}
+      .inner{padding:18px 16px 60px;}
+    }
+
+    /* COMPONENTES */
+    h2{font-size:22px;margin-bottom:4px;letter-spacing:-.4px;font-weight:800;}
+    .subtitle{color:var(--muted);font-size:14px;margin-bottom:18px;}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
     .stat{background:linear-gradient(180deg,var(--surface),#12151d);border:1px solid var(--border);border-radius:16px;padding:18px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.2);}
     .stat .n{font-size:27px;font-weight:850;letter-spacing:-.5px;background:linear-gradient(115deg,var(--gold1),var(--gold2));-webkit-background-clip:text;background-clip:text;color:transparent;}
     .stat .l{color:var(--muted);font-size:12px;margin-top:4px;}
@@ -32,50 +77,48 @@
     .badge{border-radius:12px;padding:3px 10px;font-size:11px;font-weight:800;text-transform:uppercase;color:#141414;white-space:nowrap;}
     .b-active{background:var(--wa);} .b-trial{background:var(--primary);} .b-canceled{background:var(--danger);} .b-overdue{background:#E8A33D;}
     .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
-    .act{padding:8px 12px;font-size:13px;color:#fff;}
+    .act{padding:8px 12px;font-size:13px;color:#fff;border-radius:10px;}
     .a-free{background:var(--wa);color:#0a0a0a;} .a-block{background:var(--danger);} .a-trial{background:var(--info);} .a-link{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
-    .err{color:var(--danger);margin-top:10px;}
-    .muted{color:var(--muted);}
-    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-    .logout{background:none;color:var(--muted);text-decoration:underline;font-size:13px;}
+    .hidden{display:none;}
   </style>
 </head>
 <body>
-  <header>
-    <div class="mark">💈</div>
-    <div><h1>Painel do Dono</h1><div class="muted" style="font-size:13px">Agenda Barber</div></div>
-  </header>
-
-  <!-- Login -->
+  <!-- LOGIN -->
   <div id="login" class="card" style="display:none">
-    <strong>Entrar no painel</strong>
-    <p class="muted" style="font-size:13px;margin-top:4px">Digite a chave de administrador (a que você definiu em SUPERADMIN_KEY no Render).</p>
+    <div class="brand-c"><span class="mark">💈</span><strong style="font-size:20px">Agenda Barber</strong></div>
+    <div class="muted" style="text-align:center;margin-bottom:6px">Painel do dono do sistema</div>
+    <p class="muted" style="font-size:12.5px;text-align:center;margin-bottom:10px">Chave de administrador (SUPERADMIN_KEY).</p>
     <input id="key" type="password" placeholder="Chave de administrador" />
-    <button class="btn-primary" onclick="login()">Entrar</button>
+    <button class="gold btn-full" onclick="login()">Entrar</button>
     <div class="err" id="login-err"></div>
   </div>
 
-  <!-- Panel -->
-  <div id="panel" style="display:none">
+  <!-- APP -->
+  <div id="app" class="hidden">
     <div class="topbar">
-      <span class="muted" id="updated"></span>
-      <button class="logout" onclick="logout()">Sair</button>
+      <button class="burger" onclick="toggleNav()">☰</button>
+      <span class="tb-title">Painel do Dono</span>
     </div>
-    <div class="stats" id="stats"></div>
+    <div class="backdrop" id="backdrop" onclick="toggleNav(false)"></div>
 
-    <div class="card" style="margin-bottom:16px">
-      <strong>Diagnóstico de e-mail</strong>
-      <div class="muted" id="email-status" style="font-size:13px;margin-top:8px">Verificando…</div>
-      <input id="test-to" type="email" placeholder="Enviar teste para (seu e-mail)" />
-      <div class="actions" style="margin-top:10px">
-        <button class="act a-trial" onclick="testEmail()">Enviar e-mail de teste</button>
-        <button class="act a-link" onclick="loadEmailStatus()">Atualizar status</button>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-logo">💈</div>
+        <div class="brand-txt"><strong>Agenda Barber</strong><span class="muted">Painel do dono</span></div>
       </div>
-      <div id="email-result" style="font-size:13px;margin-top:10px"></div>
-    </div>
+      <nav id="nav">
+        <div class="nav-group">Gestão</div>
+        <div class="nav-item" data-id="assinantes" onclick="go('assinantes')"><span class="ic">🏪</span>Assinantes</div>
+        <div class="nav-item" data-id="sistema" onclick="go('sistema')"><span class="ic">📧</span>E-mail / Sistema</div>
+      </nav>
+      <div class="profile">
+        <div class="avatar">🛡️</div>
+        <div class="p-info"><strong>Administrador</strong><span class="muted" id="updated">—</span></div>
+        <button class="p-logout" onclick="logout()" title="Sair">⎋</button>
+      </div>
+    </aside>
 
-    <input id="q" placeholder="🔎 Buscar barbearia por nome ou e-mail…" oninput="filterRows()" style="margin:0 0 8px" />
-    <div id="list"></div>
+    <main class="content"><div class="inner"><div id="view"></div></div></main>
   </div>
 
   <script>
@@ -83,6 +126,8 @@
     const $ = (id) => document.getElementById(id);
     const money = (v) => 'R$ ' + Number(v||0).toFixed(2).replace('.', ',');
     const dateBR = (iso) => iso ? new Date(iso).toLocaleDateString('pt-BR') : '—';
+    let DATA = null;
+    let current = 'assinantes';
 
     async function api(path, method='GET') {
       const key = localStorage.getItem(KEY) || '';
@@ -98,7 +143,33 @@
       localStorage.setItem(KEY, k);
       load();
     }
-    function logout() { localStorage.removeItem(KEY); $('panel').style.display='none'; $('login').style.display='block'; }
+    function logout() { localStorage.removeItem(KEY); $('app').classList.add('hidden'); $('login').style.display='block'; }
+
+    function toggleNav(force){
+      const sb=$('sidebar'), bd=$('backdrop');
+      const open = force===undefined ? !sb.classList.contains('open') : force;
+      sb.classList.toggle('open', open); bd.classList.toggle('show', open);
+    }
+    function go(id){
+      current=id;
+      document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.id===id));
+      render();
+      if(window.innerWidth<=860) toggleNav(false);
+      window.scrollTo(0,0);
+    }
+    function render(){ (current==='sistema' ? vSistema : vAssinantes)(); }
+
+    async function load() {
+      try {
+        DATA = await api('/tenants');
+        $('login').style.display='none'; $('app').classList.remove('hidden');
+        $('updated').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR');
+        go(current);
+      } catch (e) {
+        $('login').style.display='block'; $('app').classList.add('hidden');
+        $('login-err').textContent = e.message === 'Chave inválida' ? 'Chave inválida.' : '';
+      }
+    }
 
     const badge = (s) => {
       const map = { active:['b-active','Ativa'], trial:['b-trial','Teste'], canceled:['b-canceled','Bloqueada'], overdue:['b-overdue','Atrasada'] };
@@ -106,88 +177,53 @@
       return `<span class="badge ${c}">${l}</span>`;
     };
 
-    async function load() {
-      try {
-        const d = await api('/tenants');
-        $('login').style.display='none'; $('panel').style.display='block';
-        $('updated').textContent = 'Atualizado agora · ' + new Date().toLocaleTimeString('pt-BR');
-        loadEmailStatus();
-        $('stats').innerHTML = `
+    // ---------- ASSINANTES ----------
+    function vAssinantes(){
+      const d = DATA;
+      $('view').innerHTML = `<h2>Assinantes</h2><div class="subtitle">Todas as barbearias, receita e controle de acesso.</div>
+        <div class="stats">
           <div class="stat"><div class="n">${d.total_barbearias}</div><div class="l">barbearias</div></div>
           <div class="stat"><div class="n">${d.assinantes_ativos}</div><div class="l">assinantes ativos</div></div>
           <div class="stat"><div class="n">${d.em_teste}</div><div class="l">em teste</div></div>
-          <div class="stat"><div class="n">${money(d.mrr_estimado)}</div><div class="l">receita/mês (MRR)</div></div>`;
-        const box = $('list');
-        if (!d.barbearias.length) { box.innerHTML = '<p class="muted">Nenhuma barbearia cadastrada ainda.</p>'; return; }
-        box.innerHTML = '';
-        d.barbearias.forEach((b) => {
-          const venc = b.status === 'active' ? `renova ${dateBR(b.current_period_end)}` : (b.status === 'trial' ? `teste até ${dateBR(b.trial_ends_at)}` : '');
-          const el = document.createElement('div');
-          el.className = 'row';
-          el.dataset.search = ((b.name || '') + ' ' + (b.owner_email || '')).toLowerCase();
-          el.innerHTML = `
-            <div class="rh">
-              <div>
-                <div class="name">${b.name}</div>
-                <div class="email">${b.owner_email || 'sem e-mail'}${b.whatsapp ? ' · ' + b.whatsapp : ''}</div>
-              </div>
-              ${badge(b.status)}
+          <div class="stat"><div class="n">${money(d.mrr_estimado)}</div><div class="l">receita/mês (MRR)</div></div>
+        </div>
+        <input id="q" placeholder="🔎 Buscar barbearia por nome ou e-mail…" oninput="filterRows()" style="margin-bottom:12px" />
+        <div id="list"></div>`;
+      const box = $('list');
+      if (!d.barbearias.length) { box.innerHTML = '<p class="muted">Nenhuma barbearia cadastrada ainda.</p>'; return; }
+      box.innerHTML = '';
+      d.barbearias.forEach((b) => {
+        const venc = b.status === 'active' ? `renova ${dateBR(b.current_period_end)}` : (b.status === 'trial' ? `teste até ${dateBR(b.trial_ends_at)}` : '');
+        const el = document.createElement('div');
+        el.className = 'row';
+        el.dataset.search = ((b.name || '') + ' ' + (b.owner_email || '')).toLowerCase();
+        el.innerHTML = `
+          <div class="rh">
+            <div>
+              <div class="name">${b.name}</div>
+              <div class="email">${b.owner_email || 'sem e-mail'}${b.whatsapp ? ' · ' + b.whatsapp : ''}</div>
             </div>
-            <div class="meta">Plano: ${b.plan || '—'} · ${venc} · cadastro ${dateBR(b.created_at)} · link: /agendar/${b.slug}</div>
-            <div class="actions">
-              <button class="act a-free" onclick="act(${b.id},'activate')">Liberar 30 dias</button>
-              <button class="act a-free" onclick="actDays(${b.id})">🗓️ Liberar X dias</button>
-              <button class="act a-trial" onclick="act(${b.id},'trial')">Teste +7 dias</button>
-              <button class="act a-block" onclick="act(${b.id},'block')">Bloquear</button>
-              <button class="act a-link" onclick="resetOwner(${b.id})">🔑 Senha do dono</button>
-              <a class="act a-link" href="/agendar/${b.slug}" target="_blank">Ver link</a>
-            </div>`;
-          box.appendChild(el);
-        });
-        filterRows();
-      } catch (e) {
-        $('login').style.display='block';
-        $('login-err').textContent = e.message === 'Chave inválida' ? 'Chave inválida.' : '';
-      }
+            ${badge(b.status)}
+          </div>
+          <div class="meta">Plano: ${b.plan || '—'} · ${venc} · cadastro ${dateBR(b.created_at)} · link: /agendar/${b.slug}</div>
+          <div class="actions">
+            <button class="act a-free" onclick="act(${b.id},'activate')">Liberar 30 dias</button>
+            <button class="act a-free" onclick="actDays(${b.id})">🗓️ Liberar X dias</button>
+            <button class="act a-trial" onclick="act(${b.id},'trial')">Teste +7 dias</button>
+            <button class="act a-block" onclick="act(${b.id},'block')">Bloquear</button>
+            <button class="act a-link" onclick="resetOwner(${b.id})">🔑 Senha do dono</button>
+            <a class="act a-link" href="/agendar/${b.slug}" target="_blank">Ver link</a>
+          </div>`;
+        box.appendChild(el);
+      });
+      filterRows();
     }
 
-    async function loadEmailStatus() {
-      const box = $('email-status');
-      try {
-        const s = await api('/email-status');
-        if (!s.configured) {
-          box.innerHTML = '<span style="color:var(--danger)">✕ E-mail NÃO configurado.</span> Defina as variáveis SMTP_* (ou RESEND_API_KEY) no Render.';
-          return;
-        }
-        const esc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const senderEmail = esc(s.sender_email);
-        const badSender = /resend\.dev|example\.com/.test(s.sender_email || '');
-        const senderLine = `remetente <b>${esc(s.sender_name)}</b> &lt;<b>${senderEmail}</b>&gt;` +
-          (badSender ? `<br><span style="color:var(--danger)">⚠️ Esse remetente é um exemplo e NÃO é válido. Troque a variável <b>MAIL_FROM</b> no Render para o e-mail verificado no Brevo (ex.: <b>Agenda Barber &lt;brunoadpn88@gmail.com&gt;</b>).</span>` : '');
-        if (s.mode === 'brevo-api') {
-          box.innerHTML = `✓ Modo <b>Brevo (API HTTP)</b> · ${senderLine}`;
-        } else if (s.mode === 'resend') {
-          box.innerHTML = `✓ Modo <b>Resend</b> · ${senderLine}`;
-        } else if (s.mode === 'smtp') {
-          box.innerHTML = `⚠️ Modo <b>SMTP</b> · servidor <b>${esc(s.smtp_host)}:${s.smtp_port}</b> · login <b>${esc(s.smtp_user)}</b> · senha ${s.smtp_password_set ? 'definida' : '<span style="color:var(--danger)">FALTANDO</span>'} · ${senderLine}<br><span style="color:#E8A33D">Atenção: o Render bloqueia SMTP. Use BREVO_API_KEY (API HTTP) em vez de SMTP_*.</span>`;
-        }
-      } catch (e) { box.textContent = 'Não foi possível ler o status.'; }
-    }
-
-    async function testEmail() {
-      const to = $('test-to').value.trim();
-      const out = $('email-result');
-      if (!to) { out.innerHTML = '<span style="color:var(--danger)">Informe um e-mail.</span>'; return; }
-      out.textContent = 'Enviando…';
-      try {
-        const r = await api('/email-test?to=' + encodeURIComponent(to), 'POST');
-        if (r.ok) {
-          out.innerHTML = '<span style="color:var(--wa)">✓ Brevo aceitou o envio.</span> ' + (r.detail ? '<span class="muted">(' + r.detail + ')</span>' : '') +
-            '<br><span class="muted">Se não chegar em ~2 min (nem no spam) e não aparecer em <b>Transactional → Logs</b> no Brevo, sua conta Brevo provavelmente ainda está <b>em análise/precisa ser ativada</b> — veja instruções abaixo.</span>';
-        } else {
-          out.innerHTML = '<span style="color:var(--danger)">✕ Falhou:</span> ' + (r.error || 'erro desconhecido');
-        }
-      } catch (e) { out.innerHTML = '<span style="color:var(--danger)">Erro: ' + e.message + '</span>'; }
+    function filterRows() {
+      const q = ($('q')?.value || '').trim().toLowerCase();
+      document.querySelectorAll('#list .row').forEach((r) => {
+        r.style.display = !q || (r.dataset.search || '').includes(q) ? '' : 'none';
+      });
     }
 
     async function resetOwner(id) {
@@ -197,14 +233,12 @@
         alert('Nova senha do dono:\n\nLogin: ' + r.email + '\nSenha: ' + r.password + '\n\nPasse para o responsável da barbearia.');
       } catch (e) { alert('Erro: ' + e.message); }
     }
-
     async function act(id, action) {
       const labels = { activate:'liberar por 30 dias', trial:'estender o teste por 7 dias', block:'bloquear' };
       if (!confirm('Deseja ' + labels[action] + ' esta barbearia?')) return;
       try { await api('/tenants/' + id + '/' + action, 'POST'); load(); }
       catch (e) { alert('Erro: ' + e.message); }
     }
-
     async function actDays(id) {
       const v = prompt('Liberar acesso por quantos dias?', '30');
       if (v === null) return;
@@ -214,11 +248,49 @@
       catch (e) { alert('Erro: ' + e.message); }
     }
 
-    function filterRows() {
-      const q = ($('q').value || '').trim().toLowerCase();
-      document.querySelectorAll('#list .row').forEach((r) => {
-        r.style.display = !q || (r.dataset.search || '').includes(q) ? '' : 'none';
-      });
+    // ---------- SISTEMA (e-mail) ----------
+    function vSistema(){
+      $('view').innerHTML = `<h2>E-mail / Sistema</h2><div class="subtitle">Diagnóstico do envio de e-mails da plataforma.</div>
+        <div class="card">
+          <strong>Diagnóstico de e-mail</strong>
+          <div class="muted" id="email-status" style="font-size:13px;margin-top:8px">Verificando…</div>
+          <input id="test-to" type="email" placeholder="Enviar teste para (seu e-mail)" style="margin-top:12px" />
+          <div class="actions" style="margin-top:10px">
+            <button class="act a-trial" onclick="testEmail()">Enviar e-mail de teste</button>
+            <button class="act a-link" onclick="loadEmailStatus()">Atualizar status</button>
+          </div>
+          <div id="email-result" style="font-size:13px;margin-top:10px"></div>
+        </div>`;
+      loadEmailStatus();
+    }
+    async function loadEmailStatus() {
+      const box = $('email-status'); if(!box) return;
+      try {
+        const s = await api('/email-status');
+        if (!s.configured) {
+          box.innerHTML = '<span style="color:var(--danger)">✕ E-mail NÃO configurado.</span> Defina BREVO_API_KEY (ou SMTP_* / RESEND_API_KEY) no Render.';
+          return;
+        }
+        const esc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const senderEmail = esc(s.sender_email);
+        const badSender = /resend\.dev|example\.com/.test(s.sender_email || '');
+        const senderLine = `remetente <b>${esc(s.sender_name)}</b> &lt;<b>${senderEmail}</b>&gt;` +
+          (badSender ? `<br><span style="color:var(--danger)">⚠️ Esse remetente é um exemplo e NÃO é válido. Troque a variável <b>MAIL_FROM</b> no Render para o e-mail verificado no Brevo.</span>` : '');
+        if (s.mode === 'brevo-api') box.innerHTML = `✓ Modo <b>Brevo (API HTTP)</b> · ${senderLine}`;
+        else if (s.mode === 'resend') box.innerHTML = `✓ Modo <b>Resend</b> · ${senderLine}`;
+        else if (s.mode === 'smtp') box.innerHTML = `⚠️ Modo <b>SMTP</b> · servidor <b>${esc(s.smtp_host)}:${s.smtp_port}</b> · ${senderLine}<br><span style="color:#E8A33D">Atenção: o Render bloqueia SMTP. Prefira BREVO_API_KEY.</span>`;
+      } catch (e) { box.textContent = 'Não foi possível ler o status.'; }
+    }
+    async function testEmail() {
+      const to = $('test-to').value.trim();
+      const out = $('email-result');
+      if (!to) { out.innerHTML = '<span style="color:var(--danger)">Informe um e-mail.</span>'; return; }
+      out.textContent = 'Enviando…';
+      try {
+        const r = await api('/email-test?to=' + encodeURIComponent(to), 'POST');
+        if (r.ok) out.innerHTML = '<span style="color:var(--wa)">✓ Brevo aceitou o envio.</span> ' + (r.detail ? '<span class="muted">(' + r.detail + ')</span>' : '') + '<br><span class="muted">Se não chegar em ~2 min (nem no spam), confira os Logs no Brevo.</span>';
+        else out.innerHTML = '<span style="color:var(--danger)">✕ Falhou:</span> ' + (r.error || 'erro desconhecido');
+      } catch (e) { out.innerHTML = '<span style="color:var(--danger)">Erro: ' + e.message + '</span>'; }
     }
 
     // Init

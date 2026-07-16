@@ -2,6 +2,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useState } from 'react';
 import {
+  Image,
   RefreshControl,
   ScrollView,
   Share,
@@ -76,7 +77,14 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.hello}>Olá, {user?.name || 'bem-vindo'} 👋</Text>
           <TouchableOpacity onPress={signOut}><Text style={styles.logout}>Sair</Text></TouchableOpacity>
         </View>
-        <Text style={styles.shopName}>{tenant?.name || 'Minha Barbearia'}</Text>
+        <View style={styles.shopRow}>
+          {tenant?.logo_url ? (
+            <Image source={{ uri: tenant.logo_url }} style={styles.logo} />
+          ) : (
+            <View style={styles.logoFallback}><Text style={styles.logoEmoji}>💈</Text></View>
+          )}
+          <Text style={styles.shopName} numberOfLines={1}>{tenant?.name || 'Minha Barbearia'}</Text>
+        </View>
 
         <View style={styles.statsRow}>
           <View style={styles.stat}>
@@ -154,7 +162,11 @@ const styles = StyleSheet.create({
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   hello: { color: COLORS.textMuted, fontSize: 14 },
   logout: { color: COLORS.danger, fontSize: 14, fontWeight: '600' },
-  shopName: { color: COLORS.text, fontSize: 24, fontWeight: '800', marginTop: 4 },
+  shopRow: { flexDirection: 'row', alignItems: 'center', gap: 11, marginTop: 8 },
+  logo: { width: 42, height: 42, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border },
+  logoFallback: { width: 42, height: 42, borderRadius: 12, backgroundColor: 'rgba(240,194,75,0.14)', borderWidth: 1, borderColor: 'rgba(240,194,75,0.28)', alignItems: 'center', justifyContent: 'center' },
+  logoEmoji: { fontSize: 22 },
+  shopName: { color: COLORS.text, fontSize: 24, fontWeight: '800', flex: 1 },
   statsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 18, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, paddingVertical: 14 },
   stat: { flex: 1, alignItems: 'center' },
   statDivider: { width: 1, height: 34, backgroundColor: COLORS.border },

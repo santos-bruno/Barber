@@ -37,6 +37,7 @@ def public_info(slug: str, db: Session = Depends(get_db)):
         "whatsapp": tenant.whatsapp,
         "whatsapp_number": "".join(filter(str.isdigit, tenant.whatsapp or "")),
         "slug": tenant.slug,
+        "logo_url": tenant.logo_url or "",
     }
 
 
