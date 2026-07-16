@@ -10,11 +10,12 @@ import time
 import uuid
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 import appmax
+import email_send
 import models
 import schemas
 from database import get_db
@@ -163,7 +164,7 @@ def _find_tenant_by_payload(db: Session, data: dict):
 
 
 @router.post("/webhook")
-async def webhook(request: Request, db: Session = Depends(get_db)):
+async def webhook(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Recebe eventos da Appmax e atualiza o status da assinatura.
 
     A Appmax NÃO envia token/HMAC nos webhooks e exige resposta 2xx rápida
@@ -183,10 +184,22 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
         tenant = _find_tenant_by_payload(db, data)
         if tenant:
             if event in _APPROVE:
+                was_active = tenant.subscription_status == "active"
                 tenant.subscription_status = "active"
                 tenant.current_period_end = datetime.utcnow() + timedelta(
                     days=_period_days(tenant.plan)
                 )
+                if not was_active:  # avisa o dono só na 1ª ativação, não em cada renovação
+                    owner = (
+                        db.query(models.User)
+                        .filter(models.User.tenant_id == tenant.id, models.User.role == "owner")
+                        .order_by(models.User.id)
+                        .first()
+                    )
+                    background_tasks.add_task(
+                        email_send.send_owner_new_subscription,
+                        tenant.name, tenant.plan, owner.email if owner else "",
+                    )
             elif event in _OVERDUE:
                 tenant.subscription_status = "overdue"
             elif event in _CANCEL:

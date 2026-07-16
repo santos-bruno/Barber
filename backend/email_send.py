@@ -27,6 +27,9 @@ MAIL_FROM = os.getenv("MAIL_FROM", "Agenda Barber <onboarding@resend.dev>")
 APP_BASE_URL = os.getenv(
     "APP_BASE_URL", "https://agenda-barber-o0to.onrender.com"
 ).rstrip("/")
+# Para onde vão os avisos internos (novo cadastro, nova assinatura).
+# Se não definido, usa o próprio remetente verificado.
+OWNER_NOTIFY_EMAIL = os.getenv("OWNER_NOTIFY_EMAIL", "")
 
 
 def is_configured() -> bool:
@@ -255,4 +258,57 @@ def send_barber_invite(barber_name: str, shop_name: str, email: str, password: s
         email,
         f"Seu acesso na {shop_name} — Agenda Barber ✂️",
         _invite_html(barber_name, shop_name, email, password),
+    )
+
+
+def _owner_notify_to() -> str:
+    """Para quem enviar os avisos internos (dono do SaaS)."""
+    return OWNER_NOTIFY_EMAIL or _plain_from()
+
+
+def _owner_html(title: str, rows: list) -> str:
+    items = "".join(
+        f'<p style="margin:6px 0"><strong style="color:#F0C24B">{k}:</strong> {v}</p>'
+        for k, v in rows
+    )
+    return f"""
+    <div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0F1115;color:#F4F6FB;padding:24px;border-radius:16px;max-width:560px;margin:0 auto">
+      <div style="text-align:center"><div style="font-size:38px">💈</div>
+      <h1 style="color:#F0C24B;margin:6px 0;font-size:20px">{title}</h1></div>
+      <div style="background:#171A21;border:1px solid #262B36;border-radius:12px;padding:16px;margin:14px 0">{items}</div>
+      <p style="text-align:center"><a href="{APP_BASE_URL}/painel" style="color:#F0C24B">Abrir o painel do dono</a></p>
+    </div>
+    """
+
+
+def send_owner_new_signup(shop_name: str, owner_name: str, owner_email: str, whatsapp: str) -> None:
+    """Avisa o dono do SaaS quando uma nova barbearia se cadastra (trial)."""
+    if not is_configured():
+        return
+    send_email(
+        _owner_notify_to(),
+        f"🎉 Nova barbearia cadastrada: {shop_name}",
+        _owner_html("Nova barbearia no Agenda Barber", [
+            ("Barbearia", shop_name),
+            ("Responsável", owner_name),
+            ("E-mail", owner_email),
+            ("WhatsApp", whatsapp or "—"),
+            ("Status", "Período de teste (trial)"),
+        ]),
+    )
+
+
+def send_owner_new_subscription(shop_name: str, plan: str, owner_email: str = "") -> None:
+    """Avisa o dono do SaaS quando uma assinatura é paga/ativada."""
+    if not is_configured():
+        return
+    send_email(
+        _owner_notify_to(),
+        f"💳 Nova assinatura ativa: {shop_name}",
+        _owner_html("Nova assinatura paga! 🚀", [
+            ("Barbearia", shop_name),
+            ("Plano", (plan or "—").capitalize()),
+            ("E-mail", owner_email or "—"),
+            ("Status", "Assinatura ATIVA"),
+        ]),
     )

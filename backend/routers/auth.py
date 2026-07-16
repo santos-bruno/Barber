@@ -80,7 +80,7 @@ def register(
     db.refresh(tenant)
     db.refresh(user)
 
-    # E-mail de boas-vindas (best-effort, em segundo plano).
+    # E-mail de boas-vindas para a barbearia (best-effort, em segundo plano).
     background_tasks.add_task(
         email_send.send_welcome,
         user.name,
@@ -88,6 +88,14 @@ def register(
         user.email,
         tenant.slug,
         TRIAL_DAYS,
+    )
+    # Aviso para o dono do SaaS: nova barbearia cadastrada.
+    background_tasks.add_task(
+        email_send.send_owner_new_signup,
+        tenant.name,
+        user.name,
+        user.email,
+        tenant.whatsapp,
     )
 
     return schemas.AuthOut(token=create_token(user), user=user, tenant=tenant)
