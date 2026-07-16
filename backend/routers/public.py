@@ -1,8 +1,10 @@
 """Endpoints públicos do site de agendamento (por slug da barbearia)."""
+import base64
 from datetime import date as date_type
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 import models
@@ -39,6 +41,27 @@ def public_info(slug: str, db: Session = Depends(get_db)):
         "slug": tenant.slug,
         "logo_url": tenant.logo_url or "",
     }
+
+
+@router.get("/{slug}/logo.png")
+def public_logo(slug: str, db: Session = Depends(get_db)):
+    """Serve a logo da barbearia como imagem real (URL http), para prévia de
+    link (og:image) e favicon do site de agendamento. Sem logo -> imagem padrão."""
+    tenant = db.query(models.Tenant).filter(models.Tenant.slug == slug).first()
+    logo = (tenant.logo_url if tenant else "") or ""
+    if logo.startswith("data:image/"):
+        try:
+            header, b64 = logo.split(",", 1)
+            mime = header.split(";")[0].split(":", 1)[1] or "image/png"
+            data = base64.b64decode(b64)
+            return Response(
+                content=data,
+                media_type=mime,
+                headers={"Cache-Control": "public, max-age=3600"},
+            )
+        except Exception:  # noqa: BLE001
+            pass
+    return RedirectResponse("/og-image.png")
 
 
 @router.get("/{slug}/services", response_model=List[schemas.ServiceOut])

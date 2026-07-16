@@ -3,9 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="/favicon.png" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/favicon.png" />
   <title>Agenda Barber — Sistema de Agendamento para Barbearias</title>
-  <meta name="description" content="Agenda online, clientes, fluxo de caixa e um link para seus clientes agendarem sozinhos. Feito para barbearias." />
+  <meta name="description" content="Agenda online, clientes, fluxo de caixa e um link para seus clientes agendarem sozinhos. Feito para barbearias. Teste grátis, sem cartão." />
+  <meta name="theme-color" content="#0E1014" />
+  <link rel="canonical" href="https://agenda-barber-o0to.onrender.com/" />
+  <!-- Open Graph (WhatsApp, Facebook, Instagram, LinkedIn) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Agenda Barber" />
+  <meta property="og:title" content="Agenda Barber — agenda online para barbearias" />
+  <meta property="og:description" content="Seus clientes marcam sozinhos pelo link. Agenda, caixa e clientes num app só. Teste grátis, sem cartão." />
+  <meta property="og:url" content="https://agenda-barber-o0to.onrender.com/" />
+  <meta property="og:image" content="https://agenda-barber-o0to.onrender.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="pt_BR" />
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Agenda Barber — agenda online para barbearias" />
+  <meta name="twitter:description" content="Seus clientes marcam sozinhos pelo link. Teste grátis, sem cartão." />
+  <meta name="twitter:image" content="https://agenda-barber-o0to.onrender.com/og-image.png" />
   <style>
     :root{
       --bg:#0E1014; --surface:#161922; --surface2:#1C2029; --primary:#F0C24B;
@@ -138,6 +156,7 @@
     .muted{color:var(--muted);}
     .copy{display:flex;gap:8px;margin-top:8px;}
     .copy input{font-size:13px;}
+    .ck{color:#191307;background:linear-gradient(135deg,var(--gold1),var(--gold2));width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:850;flex:0 0 auto;}
     @media(max-width:600px){h1{font-size:37px;letter-spacing:-.8px;} .tag{font-size:17px;} .stats{grid-template-columns:1fr 1fr;} .stat:last-child{grid-column:1/-1;} h2{font-size:27px;} section{padding:44px 0;}}
   </style>
 </head>
@@ -186,6 +205,7 @@
         <div class="feature"><div class="ic">✂️</div><h3>Vários barbeiros</h3><p>Cada barbeiro com login próprio, vendo só a agenda dele.</p></div>
         <div class="feature"><div class="ic">🕐</div><h3>Horários flexíveis</h3><p>Defina dias e horários; o sistema mostra só o que está livre.</p></div>
         <div class="feature"><div class="ic">🔗</div><h3>Seu link exclusivo</h3><p>Coloque no Instagram e nos anúncios. Agendamentos caem direto na agenda.</p></div>
+        <div class="feature"><div class="ic">🎨</div><h3>Com a sua marca</h3><p>Coloque a logo/foto da barbearia — ela aparece no painel, no app e no seu link de agendamento.</p></div>
       </div>
     </section>
 
@@ -194,7 +214,7 @@
       <h2>Comece em 3 passos</h2>
       <p class="sub">Do cadastro ao primeiro agendamento em minutos.</p>
       <div class="steps">
-        <div class="step"><div class="num"></div><h3>Crie sua conta</h3><p>Cadastre sua barbearia e seus serviços. Leva menos de 5 minutos.</p></div>
+        <div class="step"><div class="num"></div><h3>Crie e personalize</h3><p>Cadastre sua barbearia, seus serviços e a logo. Leva menos de 5 minutos.</p></div>
         <div class="step"><div class="num"></div><h3>Divulgue seu link</h3><p>Coloque o link de agendamento na bio do Instagram e no WhatsApp.</p></div>
         <div class="step"><div class="num"></div><h3>Receba agendamentos</h3><p>Os clientes marcam sozinhos e tudo cai direto na sua agenda.</p></div>
       </div>
@@ -342,54 +362,52 @@
     }
 
     function showAfterAuth(auth, fresh){
+      // Guarda o token para entrar direto no painel e no pagamento (mesmo login).
+      try { localStorage.setItem('@agendabarber/gtoken', auth.token); } catch(e){}
       const link = `${location.origin}/agendar/${auth.tenant.slug}`;
       $('signup-form').style.display='none';
       const done = $('signup-done'); done.style.display='block';
       const emailNote = fresh ? `
-        <div class="panel" style="border-color:var(--primary)">
+        <div class="panel">
           <strong>📧 Enviamos um e-mail de boas-vindas</strong>
-          <p style="color:var(--muted);margin-top:6px">Confira a caixa de entrada de <b>${auth.user.email}</b> (e também o <b>spam/lixo eletrônico</b>) — nele estão seu link e os primeiros passos. Se não chegar em alguns minutos, não tem problema: seus dados de acesso são o e-mail e a senha que você acabou de cadastrar.</p>
+          <p style="color:var(--muted);margin-top:6px">Confira a caixa de entrada de <b>${auth.user.email}</b> (e também o <b>spam</b>). Se não chegar, tudo bem: seu acesso é o e-mail e a senha que você acabou de cadastrar.</p>
         </div>` : '';
       const apkUrl = 'https://github.com/santos-bruno/Barber/releases/download/apk-latest/agenda-barber.apk';
       done.innerHTML = `
         <div class="panel" style="border-color:var(--primary)">
           <strong>${fresh ? '✅ Conta criada' : '👋 Bem-vindo de volta'}, ${auth.user.name}!</strong>
-          <p style="color:var(--muted);margin-top:6px">${auth.tenant.name} · ${auth.tenant.subscription_status === 'trial' ? 'período de teste grátis ativo' : 'status: ' + auth.tenant.subscription_status}</p>
-          <p style="margin-top:10px">Escolha por onde entrar:</p>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
-            <a class="btn btn-primary" style="width:100%;text-align:center" href="/gerente">💻 Acessar no computador (web)</a>
-            <a class="btn btn-ghost" style="width:100%;text-align:center" href="${apkUrl}">📱 Baixar o app Android (APK)</a>
-            <a class="btn btn-ghost" style="width:100%;text-align:center" href="/guia.pdf" target="_blank">📄 Baixar guia de primeiros passos (PDF)</a>
+          <p style="color:var(--muted);margin-top:6px">${auth.tenant.name} · ${auth.tenant.subscription_status === 'trial' ? '🎁 teste grátis ativo' : 'status: ' + auth.tenant.subscription_status}</p>
+          <a class="btn btn-primary" style="width:100%;text-align:center;margin-top:14px" href="/gerente">🚀 Abrir meu painel</a>
+          <p class="muted" style="font-size:13px;margin-top:10px">Você já entra logado. Login: <b>${auth.user.email}</b> (mesma senha no app).</p>
+        </div>
+        <div class="panel">
+          <strong>✨ Primeiros passos</strong>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;gap:11px"><span class="ck">1</span><div><b>Personalize sua barbearia</b><br><span class="muted" style="font-size:13.5px">No painel, em <b>Personalização</b>, envie sua logo e ajuste seus serviços e horários.</span></div></div>
+            <div style="display:flex;gap:11px"><span class="ck">2</span><div><b>Divulgue seu link</b><br><span class="muted" style="font-size:13.5px">Coloque o link abaixo na bio do Instagram e no WhatsApp.</span></div></div>
+            <div style="display:flex;gap:11px"><span class="ck">3</span><div><b>Receba agendamentos</b><br><span class="muted" style="font-size:13.5px">Os clientes marcam sozinhos e tudo cai na sua agenda.</span></div></div>
           </div>
-          <p class="muted" style="font-size:13px;margin-top:12px">Seu login é <b>${auth.user.email}</b> e a senha que você acabou de criar. O mesmo login funciona no computador e no app.</p>
         </div>` + emailNote + `
         <div class="panel">
-          <strong>🔗 Seu link de agendamento (divulgue!)</strong>
-          <p class="muted" style="font-size:13.5px;margin-top:4px">Coloque na bio do Instagram e no WhatsApp — os clientes agendam sozinhos.</p>
+          <strong>🔗 Seu link de agendamento</strong>
+          <p class="muted" style="font-size:13.5px;margin-top:4px">Divulgue para os clientes agendarem sozinhos.</p>
           <div class="copy"><input id="booklink" readonly value="${link}" /><button class="btn btn-primary btn-sm" onclick="copyLink()">Copiar</button></div>
         </div>
         <div class="panel">
-          <strong>Assinar agora</strong>
-          <label>Plano</label>
-          <select id="sub-plan">${PLANS.map((p)=>`<option value="${p.id}">${p.label} — R$ ${Number(p.price).toFixed(2)}</option>`).join('')}</select>
-          <label>CPF ou CNPJ</label><input id="sub-doc" placeholder="Somente números" />
-          <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="doSubscribe('${auth.token}')">Ir para o pagamento</button>
-          <div class="msg" id="sub-msg"></div>
+          <strong>📲 Acessar também por</strong>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+            <a class="btn btn-ghost" style="width:100%;text-align:center" href="${apkUrl}">📱 Baixar o app Android (APK)</a>
+            <a class="btn btn-ghost" style="width:100%;text-align:center" href="/guia.pdf" target="_blank">📄 Guia de primeiros passos (PDF)</a>
+          </div>
+        </div>
+        <div class="panel" style="border-color:rgba(240,194,75,.4)">
+          <strong>💳 Assinar quando quiser</strong>
+          <p class="muted" style="font-size:13.5px;margin-top:4px">Pagamento no cartão com renovação automática. Você pode continuar no teste grátis por enquanto.</p>
+          <a class="btn btn-primary" style="width:100%;text-align:center;margin-top:12px" href="/assinar">Ir para o pagamento</a>
         </div>`;
     }
 
-    function copyLink(){ const el=$('booklink'); el.select(); document.execCommand('copy'); }
-
-    async function doSubscribe(token){
-      const msg = $('sub-msg'); msg.textContent='Processando…'; msg.className='msg';
-      try{
-        const r = await fetch('/billing/subscribe',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({plan:$('sub-plan').value,cpf_cnpj:$('sub-doc').value.replace(/\D/g,''),billing_type:'CREDIT_CARD'})});
-        const data = await r.json();
-        if(!r.ok){ msg.className='msg err'; msg.textContent=data.detail||'Erro ao iniciar pagamento.'; return; }
-        if(data.checkout_url){ window.location.href=data.checkout_url; }
-        else { msg.className='msg ok'; msg.textContent='Assinatura criada! Verifique seu e-mail para pagar.'; }
-      }catch(e){ msg.className='msg err'; msg.textContent='Erro de conexão.'; }
-    }
+    function copyLink(){ const el=$('booklink'); el.select(); document.execCommand('copy'); const b=event.target; const t=b.textContent; b.textContent='✓ Copiado'; setTimeout(()=>b.textContent=t,1500); }
 
     loadPlans();
   </script>

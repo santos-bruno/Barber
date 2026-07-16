@@ -6,13 +6,15 @@ SaaS de agendamento para barbearias — API + páginas web.
 - Site de agendamento por barbearia em "/agendar/{slug}"
 - Docs da API em /docs
 """
+import html as _html
 import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
-from database import Base, engine
+import models
+from database import Base, SessionLocal, engine
 from demo import seed_demo
 from hardening import SecurityHeadersMiddleware
 from migrate import run_migrations
@@ -104,9 +106,23 @@ def favicon():
     return JSONResponse({}, status_code=404)
 
 
+@app.get("/favicon.png")
+def favicon_png():
+    return _serve("favicon.png")
+
+
+@app.get("/og-image.png")
+def og_image():
+    """Imagem de prévia ao compartilhar o link (Open Graph)."""
+    return _serve("og-image.png")
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+APP_BASE_URL = os.getenv("APP_BASE_URL", "https://agenda-barber-o0to.onrender.com").rstrip("/")
 
 
 def _serve(filename: str):
@@ -114,6 +130,69 @@ def _serve(filename: str):
     if os.path.exists(path):
         return FileResponse(path)
     return JSONResponse({"status": "ok"})
+
+
+def _og_meta(title: str, desc: str, url: str, image: str) -> str:
+    """Bloco de meta tags (Open Graph + Twitter) para prévia ao compartilhar."""
+    e = _html.escape
+    t, d, u, i = e(title), e(desc), e(url), e(image)
+    return (
+        f'<meta property="og:type" content="website">'
+        f'<meta property="og:site_name" content="Agenda Barber">'
+        f'<meta property="og:title" content="{t}">'
+        f'<meta property="og:description" content="{d}">'
+        f'<meta property="og:url" content="{u}">'
+        f'<meta property="og:image" content="{i}">'
+        f'<meta property="og:locale" content="pt_BR">'
+        f'<meta name="twitter:card" content="summary_large_image">'
+        f'<meta name="twitter:title" content="{t}">'
+        f'<meta name="twitter:description" content="{d}">'
+        f'<meta name="twitter:image" content="{i}">'
+    )
+
+
+def _serve_public(slug: str, filename: str, kind: str):
+    """Serve a página pública (agendamento/loja) já com SEO por barbearia:
+    título, descrição e imagem (logo) para a prévia do link ao compartilhar."""
+    path = os.path.join(WEB_DIR, filename)
+    if not os.path.exists(path):
+        return JSONResponse({"status": "ok"})
+    try:
+        page = open(path, encoding="utf-8").read()
+    except OSError:
+        return _serve(filename)
+
+    db = SessionLocal()
+    try:
+        tenant = db.query(models.Tenant).filter(models.Tenant.slug == slug).first()
+    finally:
+        db.close()
+
+    if tenant:
+        name = tenant.name
+        if kind == "loja":
+            title = f"Loja da {name}"
+            desc = "Peça seus produtos online. " + (tenant.address or "")
+            url = f"{APP_BASE_URL}/loja/{slug}"
+        else:
+            title = f"Agende seu horário na {name}"
+            desc = (
+                "Escolha o serviço e o horário e agende online, sem precisar ligar. "
+                + (tenant.address or "")
+            ).strip()
+            url = f"{APP_BASE_URL}/agendar/{slug}"
+        image = (
+            f"{APP_BASE_URL}/public/{slug}/logo.png"
+            if tenant.logo_url
+            else f"{APP_BASE_URL}/og-image.png"
+        )
+        favicon = f"{APP_BASE_URL}/public/{slug}/logo.png" if tenant.logo_url else "/favicon.png"
+        inject = (
+            _og_meta(title, desc, url, image)
+            + f'<link rel="apple-touch-icon" href="{_html.escape(favicon)}">'
+        )
+        page = page.replace("<head>", "<head>\n" + inject, 1)
+    return HTMLResponse(page)
 
 
 @app.get("/")
@@ -125,13 +204,13 @@ def landing():
 @app.get("/agendar/{slug}")
 def booking(slug: str):
     """Site de agendamento de uma barbearia (o JS lê o slug da URL)."""
-    return _serve("index.html")
+    return _serve_public(slug, "index.html", "agendar")
 
 
 @app.get("/loja/{slug}")
 def store(slug: str):
     """Loja virtual de uma barbearia (o JS lê o slug da URL)."""
-    return _serve("store.html")
+    return _serve_public(slug, "store.html", "loja")
 
 
 @app.get("/painel")
