@@ -57,9 +57,11 @@ export default function HomeScreen({ navigation }) {
   const showBanner = isOwner && status && status !== 'active';
 
   const Tile = ({ label, emoji, onPress }) => (
-    <TouchableOpacity style={styles.tile} onPress={onPress} activeOpacity={0.8}>
-      <View style={styles.tileIcon}><Text style={styles.tileEmoji}>{emoji}</Text></View>
-      <Text style={styles.tileLabel}>{label}</Text>
+    <TouchableOpacity style={[styles.tile, SHADOW]} onPress={onPress} activeOpacity={0.85}>
+      <LinearGradient colors={GRADIENTS.card} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.tileInner}>
+        <View style={styles.tileIcon}><Text style={styles.tileEmoji}>{emoji}</Text></View>
+        <Text style={styles.tileLabel}>{label}</Text>
+      </LinearGradient>
     </TouchableOpacity>
   );
 
@@ -156,7 +158,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 18, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, paddingVertical: 14 },
   stat: { flex: 1, alignItems: 'center' },
   statDivider: { width: 1, height: 34, backgroundColor: COLORS.border },
-  statNum: { color: COLORS.primary, fontSize: 24, fontWeight: '800' },
+  statNum: { color: COLORS.primary, fontSize: 25, fontWeight: '850', letterSpacing: -0.3 },
   statLabel: { color: COLORS.textMuted, fontSize: 12, marginTop: 3 },
   banner: { backgroundColor: 'rgba(240,194,75,0.12)', borderRadius: 16, padding: 15, marginTop: 14, borderWidth: 1, borderColor: 'rgba(240,194,75,0.4)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bannerText: { color: COLORS.primary, fontWeight: '700', flex: 1 },
@@ -164,16 +166,17 @@ const styles = StyleSheet.create({
   errorBox: { backgroundColor: 'rgba(255,92,92,0.12)', borderRadius: 16, padding: 15, marginTop: 14, borderWidth: 1, borderColor: 'rgba(255,92,92,0.4)' },
   errorText: { color: '#ff9b9b' },
   errorHint: { color: '#ffbdbd', fontSize: 12, marginTop: 4 },
-  card: { backgroundColor: COLORS.surface, borderRadius: 18, padding: 16, marginTop: 14, borderWidth: 1, borderColor: COLORS.border },
+  card: { backgroundColor: COLORS.surface, borderRadius: 18, padding: 16, marginTop: 14, borderWidth: 1, borderColor: COLORS.border, ...SHADOW },
   cardTitle: { color: COLORS.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
   apptRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
   timePill: { backgroundColor: 'rgba(240,194,75,0.15)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, marginRight: 12 },
   timePillText: { color: COLORS.primary, fontWeight: '800', fontSize: 13 },
   apptName: { color: COLORS.text, flex: 1 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16 },
-  tile: { width: '47%', backgroundColor: COLORS.surface, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: COLORS.border },
-  tileIcon: { width: 46, height: 46, borderRadius: 14, backgroundColor: COLORS.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  tile: { width: '47%', borderRadius: 18, borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden' },
+  tileInner: { padding: 16 },
+  tileIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(240,194,75,0.13)', borderWidth: 1, borderColor: 'rgba(240,194,75,0.22)', alignItems: 'center', justifyContent: 'center' },
   tileEmoji: { fontSize: 24 },
-  tileLabel: { color: COLORS.text, marginTop: 12, fontWeight: '700', fontSize: 15 },
+  tileLabel: { color: COLORS.text, marginTop: 12, fontWeight: '750', fontSize: 15 },
   settingsLink: { color: COLORS.textMuted, fontSize: 15 },
 });

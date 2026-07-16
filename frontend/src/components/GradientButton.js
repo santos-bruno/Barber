@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
-import { COLORS, GRADIENTS, SHADOW } from '../constants/business';
+import { COLORS, GRADIENTS, SHADOW_GOLD } from '../constants/business';
 
 export default function GradientButton({
   title,
@@ -13,12 +13,13 @@ export default function GradientButton({
   textColor = COLORS.onPrimary,
   style,
 }) {
+  const gold = colors === GRADIENTS.gold;
   return (
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
       disabled={disabled || loading}
-      style={[SHADOW, { borderRadius: 14 }, (disabled || loading) && { opacity: 0.6 }, style]}
+      style={[gold && SHADOW_GOLD, { borderRadius: 15 }, (disabled || loading) && { opacity: 0.55 }, style]}
     >
       <LinearGradient
         colors={colors}
@@ -37,6 +38,6 @@ export default function GradientButton({
 }
 
 const styles = StyleSheet.create({
-  grad: { borderRadius: 14, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
-  text: { fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
+  grad: { borderRadius: 15, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
+  text: { fontSize: 16, fontWeight: '850', letterSpacing: 0.3 },
 });
