@@ -36,6 +36,10 @@ export const getPlans = () => req('/billing/plans');
 export const getBillingStatus = () => req('/billing/status');
 export const subscribe = (data) =>
   req('/billing/subscribe', { method: 'POST', body: JSON.stringify(data) });
+// Appmax (gateway atual): status + checkout no cartão (recorrente)
+export const getAppmaxStatus = () => req('/billing/appmax/status');
+export const appmaxCheckout = (data) =>
+  req('/billing/appmax/checkout', { method: 'POST', body: JSON.stringify(data) });
 
 // ---- Health ----
 export const getHealth = () => req('/health');
