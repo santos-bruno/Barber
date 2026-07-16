@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
     Time,
 )
 from sqlalchemy.orm import relationship
@@ -27,6 +28,7 @@ class Tenant(Base):
     slug = Column(String, unique=True, index=True, nullable=False)  # p/ link público
     address = Column(String, default="")
     whatsapp = Column(String, default="")
+    logo_url = Column(Text, default="")  # logo/foto da barbearia (data URL redimensionada)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Assinatura

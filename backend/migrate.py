@@ -20,6 +20,7 @@ EXPECTED = {
     "tenants": {
         "appmax_customer_id": "VARCHAR DEFAULT ''",
         "appmax_order_id": "VARCHAR DEFAULT ''",
+        "logo_url": "TEXT DEFAULT ''",
     },
     "appointments": {
         "barber_id": "INTEGER",

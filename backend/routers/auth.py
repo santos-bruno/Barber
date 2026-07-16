@@ -17,6 +17,7 @@ from security import (
     get_current_tenant,
     get_current_user,
     hash_password,
+    require_owner,
     verify_password,
 )
 
@@ -131,6 +132,34 @@ def me(
 ):
     # Reaproveita AuthOut sem gerar novo token (o cliente já tem o seu).
     return schemas.AuthOut(token="", user=user, tenant=tenant)
+
+
+@router.patch("/tenant", response_model=schemas.TenantOut)
+def update_tenant(
+    payload: schemas.TenantUpdate,
+    _owner: models.User = Depends(require_owner),
+    tenant: models.Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+):
+    """Atualiza os dados da barbearia (nome, WhatsApp, endereço e logo/foto).
+    Só o dono pode alterar."""
+    if payload.name is not None:
+        name = payload.name.strip()
+        if name:
+            tenant.name = name
+    if payload.whatsapp is not None:
+        tenant.whatsapp = payload.whatsapp.strip()
+    if payload.address is not None:
+        tenant.address = payload.address.strip()
+    if payload.logo_url is not None:
+        logo = payload.logo_url.strip()
+        # Aceita só data URL de imagem ou vazio (para remover) — evita URLs externas.
+        if logo and not logo.startswith("data:image/"):
+            raise HTTPException(status_code=400, detail="Logo inválida.")
+        tenant.logo_url = logo
+    db.commit()
+    db.refresh(tenant)
+    return tenant
 
 
 @router.post("/change-password")

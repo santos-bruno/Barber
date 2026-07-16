@@ -37,11 +37,20 @@ class TenantOut(BaseModel):
     slug: str
     address: str
     whatsapp: str
+    logo_url: str = ""
     plan: str
     subscription_status: str
     trial_ends_at: Optional[datetime] = None
     current_period_end: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
+
+
+class TenantUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=120)
+    whatsapp: Optional[str] = Field(default=None, max_length=30)
+    address: Optional[str] = Field(default=None, max_length=200)
+    # data URL da logo (imagem redimensionada no navegador); ~até 600 KB
+    logo_url: Optional[str] = Field(default=None, max_length=600000)
 
 
 class UserOut(BaseModel):
