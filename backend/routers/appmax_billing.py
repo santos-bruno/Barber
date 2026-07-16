@@ -61,9 +61,41 @@ def debug(key: str = ""):
     return info
 
 
+@router.get("/try")
+def try_authorize(key: str = "", app_id: str = "", external_key: str = "agendabarber"):
+    """Diagnóstico: testa /app/authorize com um app_id específico e mostra a
+    resposta CRUA da Appmax — sem redirecionar. Serve para descobrir qual
+    formato de app_id a Appmax aceita (UUID x ID numérico x client_id) sem
+    precisar redeployar. Ex.:
+        /billing/appmax/try?key=SUA_CHAVE&app_id=8765588b-...   (UUID)
+        /billing/appmax/try?key=SUA_CHAVE&app_id=123            (numérico)
+    """
+    if not _admin_ok(key):
+        raise HTTPException(status_code=401, detail="Acesso negado.")
+    if not appmax.app_configured():
+        raise HTTPException(status_code=503, detail="Credenciais do app não configuradas.")
+    used = app_id or appmax.APP_ID
+    url_callback = f"{APP_BASE_URL}/billing/appmax/callback?state=teste"
+    try:
+        status_code, body = appmax._app_authorize_raw(used, external_key, url_callback)
+    except Exception as e:  # noqa: BLE001
+        return {"app_id_testado": used, "erro_oauth": str(e)}
+    return {
+        "app_id_testado": used,
+        "status": status_code,
+        "aceito": status_code < 300,
+        "resposta": body,
+        "dica": "Se 'aceito' for true, defina esse valor em APPMAX_APP_ID no Render.",
+    }
+
+
 @router.get("/connect")
-def connect(key: str = ""):
-    """Inicia a instalação do app: autoriza e redireciona o dono para a Appmax."""
+def connect(key: str = "", app_id: str = ""):
+    """Inicia a instalação do app: autoriza e redireciona o dono para a Appmax.
+
+    `app_id` opcional na querystring sobrescreve o APPMAX_APP_ID (para testar o
+    ID numérico direto pela URL).
+    """
     if not _admin_ok(key):
         raise HTTPException(status_code=401, detail="Acesso negado.")
     if not appmax.app_configured():
@@ -75,7 +107,7 @@ def connect(key: str = ""):
     _connect_states[state] = time.time()
     url_callback = f"{APP_BASE_URL}/billing/appmax/callback?state={state}"
     try:
-        hash_token = appmax.app_authorize("agendabarber", url_callback)
+        hash_token = appmax.app_authorize("agendabarber", url_callback, app_id=app_id)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Erro na Appmax: {e}")
     return RedirectResponse(appmax.AUTHORIZE_URL.rstrip("/") + "/" + hash_token)

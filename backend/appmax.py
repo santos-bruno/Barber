@@ -58,18 +58,38 @@ def _app_token() -> str:
     return r.json()["access_token"]
 
 
-def app_authorize(external_key: str, url_callback: str) -> str:
-    """Gera o hash de autorização. Retorna o hash p/ redirecionar o merchant."""
+def _app_authorize_raw(app_id: str, external_key: str, url_callback: str):
+    """Chama /app/authorize e devolve (status, corpo) SEM levantar exceção.
+
+    Usado tanto pelo fluxo real quanto pelo diagnóstico /try (que testa qual
+    formato de app_id a Appmax aceita — UUID x ID numérico x client_id).
+    """
     token = _app_token()
     r = httpx.post(
         f"{BASE_URL}/app/authorize",
         headers={"Authorization": f"Bearer {token}", "content-type": "application/json"},
-        json={"app_id": APP_ID, "external_key": external_key, "url_callback": url_callback},
+        json={"app_id": app_id, "external_key": external_key, "url_callback": url_callback},
         timeout=30,
     )
-    if r.status_code >= 300:
-        raise RuntimeError(f"Appmax /app/authorize {r.status_code}: {r.text}")
-    return r.json()["data"]["token"]
+    try:
+        body = r.json()
+    except Exception:  # noqa: BLE001
+        body = r.text
+    return r.status_code, body
+
+
+def app_authorize(external_key: str, url_callback: str, app_id: str = "") -> str:
+    """Gera o hash de autorização. Retorna o hash p/ redirecionar o merchant.
+
+    `app_id` opcional sobrescreve o APPMAX_APP_ID do ambiente (útil para testar
+    o ID numérico sem redeploy).
+    """
+    status, body = _app_authorize_raw(app_id or APP_ID, external_key, url_callback)
+    if status >= 300:
+        raise RuntimeError(f"Appmax /app/authorize {status}: {body}")
+    if isinstance(body, dict):
+        return body["data"]["token"]
+    raise RuntimeError(f"Appmax /app/authorize resposta inesperada: {body}")
 
 
 def app_generate_merchant(hash_token: str) -> dict:
