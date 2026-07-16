@@ -6,6 +6,7 @@ Endpoints:
   POST /billing/appmax/checkout  -> cria cliente+pedido+pagamento recorrente (token do Appmax JS)
 """
 import os
+import secrets
 import time
 import uuid
 from datetime import datetime, timedelta
@@ -33,10 +34,15 @@ APP_BASE_URL = os.getenv("APP_BASE_URL", "https://agenda-barber-o0to.onrender.co
 _connect_states: dict = {}
 
 
+def _admin_ok(key: str) -> bool:
+    """Confere a chave de admin de forma resistente a timing attack."""
+    return bool(SUPERADMIN_KEY) and bool(key) and secrets.compare_digest(key, SUPERADMIN_KEY)
+
+
 @router.get("/debug")
 def debug(key: str = ""):
     """Diagnóstico da configuração do app (sem expor segredos)."""
-    if not SUPERADMIN_KEY or key != SUPERADMIN_KEY:
+    if not _admin_ok(key):
         raise HTTPException(status_code=401, detail="Acesso negado.")
     info = {
         "base_url": appmax.BASE_URL,
@@ -58,7 +64,7 @@ def debug(key: str = ""):
 @router.get("/connect")
 def connect(key: str = ""):
     """Inicia a instalação do app: autoriza e redireciona o dono para a Appmax."""
-    if not SUPERADMIN_KEY or key != SUPERADMIN_KEY:
+    if not _admin_ok(key):
         raise HTTPException(status_code=401, detail="Acesso negado.")
     if not appmax.app_configured():
         raise HTTPException(
@@ -173,14 +179,20 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
     """
     # Validação opcional por querystring (?token=...), nunca por header —
     # a Appmax não tem como enviar header, e 401/403 causaria retries.
-    if APPMAX_WEBHOOK_TOKEN and request.query_params.get("token") != APPMAX_WEBHOOK_TOKEN:
-        return {"ok": True}  # ignora silenciosamente (não dispara retry)
+    if APPMAX_WEBHOOK_TOKEN:
+        got = request.query_params.get("token") or ""
+        if not secrets.compare_digest(got, APPMAX_WEBHOOK_TOKEN):
+            return {"ok": True}  # ignora silenciosamente (não dispara retry)
 
     try:
         body = await request.json()
         event = (body.get("event") or "").lower()
         data = body.get("data") or {}
-        print(f"[appmax webhook] evento={event} data={data}")  # payload cru p/ debug
+        # Log só o essencial (sem PII do cliente): evento + ids do pedido/cliente.
+        print(
+            f"[appmax webhook] evento={event} "
+            f"order={data.get('order_id')} customer={data.get('customer_id')}"
+        )
         tenant = _find_tenant_by_payload(db, data)
         if tenant:
             if event in _APPROVE:

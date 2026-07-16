@@ -20,7 +20,9 @@ services:
           name: agenda-barber-db
           property: connectionString
       - key: SECRET_KEY
-        generateValue: true          # chave JWT gerada automaticamente
+        generateValue: true          # chave JWT gerada automaticamente (obrigatória em produção)
+      - key: CORS_ORIGINS
+        value: https://agenda-barber-o0to.onrender.com   # origens liberadas p/ navegador (separe por vírgula)
       - key: TRIAL_DAYS
         value: "7"
       - key: SEED_DEMO

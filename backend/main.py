@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from database import Base, engine
 from demo import seed_demo
+from hardening import SecurityHeadersMiddleware
 from migrate import run_migrations
 from routers import (
     appmax_billing,
@@ -43,12 +44,35 @@ app = FastAPI(
     version="3.0.0",
 )
 
+
+def _cors_origins() -> list[str]:
+    """Origens permitidas para chamadas de navegador (CORS).
+
+    Defina CORS_ORIGINS no ambiente (lista separada por vírgula) para adicionar
+    domínios próprios. O app mobile nativo não envia Origin, então não é afetado.
+    """
+    raw = os.getenv("CORS_ORIGINS", "")
+    if raw.strip():
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    app_url = os.getenv("APP_BASE_URL", "https://agenda-barber-o0to.onrender.com").rstrip("/")
+    # Produção + origens comuns de desenvolvimento (Expo / web local).
+    return [
+        app_url,
+        "http://localhost:8081",
+        "http://localhost:19006",
+        "http://localhost:3000",
+    ]
+
+
+# Barra corpos grandes e injeta cabeçalhos de segurança (HSTS, CSP, etc.).
+app.add_middleware(SecurityHeadersMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors_origins(),
+    allow_credentials=False,  # auth via header Bearer (JWT), não cookies
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Admin-Key"],
 )
 
 # API

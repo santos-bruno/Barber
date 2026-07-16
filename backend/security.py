@@ -1,5 +1,6 @@
 """Autenticação (JWT), hashing de senha e dependências de tenant/assinatura."""
 import os
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -11,19 +12,41 @@ from sqlalchemy.orm import Session
 import models
 from database import get_db
 
-SECRET_KEY = os.getenv("SECRET_KEY", "troque-esta-chave-em-producao")
+_WEAK_DEFAULT = "troque-esta-chave-em-producao"
+SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
+
+# Em produção (banco Postgres) exigimos uma chave forte e definida. Sem ela, o
+# sistema não sobe — evita rodar com uma chave previsível que permitiria forjar
+# tokens de qualquer usuário. Em desenvolvimento (SQLite) geramos uma chave
+# efêmera (os tokens expiram ao reiniciar, o que é aceitável localmente).
+_is_production = os.getenv("DATABASE_URL", "").startswith(("postgres://", "postgresql"))
+if not SECRET_KEY or SECRET_KEY == _WEAK_DEFAULT:
+    if _is_production:
+        raise RuntimeError(
+            "SECRET_KEY não definida (ou usando o valor padrão) em produção. "
+            "Defina uma chave forte na variável de ambiente SECRET_KEY."
+        )
+    SECRET_KEY = secrets.token_urlsafe(48)
+
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_DAYS = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def _prep(password: str) -> str:
+    """O bcrypt só considera os primeiros 72 bytes. Truncamos de forma segura
+    (em UTF-8) para nunca estourar erro em versões novas da lib e manter o
+    hashing consistente."""
+    return password.encode("utf-8")[:72].decode("utf-8", "ignore")
+
+
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return pwd_context.hash(_prep(password))
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return pwd_context.verify(_prep(plain), hashed)
 
 
 def create_token(user: models.User) -> str:

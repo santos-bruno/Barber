@@ -4,27 +4,27 @@ from datetime import datetime
 from datetime import time as time_type
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 # ---------- Auth / Tenant ----------
 class RegisterInput(BaseModel):
-    barbershop_name: str
-    owner_name: str
+    barbershop_name: str = Field(min_length=1, max_length=120)
+    owner_name: str = Field(min_length=1, max_length=120)
     email: EmailStr
-    password: str
-    whatsapp: str = ""
-    address: str = ""
+    password: str = Field(min_length=6, max_length=128)
+    whatsapp: str = Field(default="", max_length=30)
+    address: str = Field(default="", max_length=200)
 
 
 class LoginInput(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=1, max_length=128)
 
 
 class ChangePasswordInput(BaseModel):
-    current_password: str
-    new_password: str
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=6, max_length=128)
 
 
 class ResetPasswordInput(BaseModel):
@@ -101,9 +101,9 @@ class ServiceOut(ServiceBase):
 
 # ---------- Clients ----------
 class ClientBase(BaseModel):
-    name: str
-    phone: str = ""
-    notes: str = ""
+    name: str = Field(min_length=1, max_length=120)
+    phone: str = Field(default="", max_length=30)
+    notes: str = Field(default="", max_length=1000)
 
 
 class ClientCreate(ClientBase):
@@ -118,13 +118,13 @@ class ClientOut(ClientBase):
 
 # ---------- Appointments ----------
 class AppointmentBase(BaseModel):
-    customer_name: str
-    phone: str = ""
+    customer_name: str = Field(min_length=1, max_length=120)
+    phone: str = Field(default="", max_length=30)
     service_id: Optional[int] = None
-    service_name: str
+    service_name: str = Field(min_length=1, max_length=120)
     date: date_type
     time: time_type
-    notes: str = ""
+    notes: str = Field(default="", max_length=500)
     payment_type: str = "avista"  # avista | assinatura
     barber_id: Optional[int] = None
 
@@ -154,9 +154,9 @@ class AppointmentOut(AppointmentBase):
 
 # ---------- Staff (barbeiros) ----------
 class StaffCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=120)
     email: EmailStr
-    password: str
+    password: str = Field(min_length=6, max_length=128)
 
 
 class StaffOut(BaseModel):
@@ -246,9 +246,9 @@ class OrderItemIn(BaseModel):
 
 
 class OrderCreate(BaseModel):
-    customer_name: str
-    phone: str = ""
-    items: list[OrderItemIn]
+    customer_name: str = Field(min_length=1, max_length=120)
+    phone: str = Field(default="", max_length=30)
+    items: list[OrderItemIn] = Field(min_length=1, max_length=50)
 
 
 class OrderItemOut(BaseModel):

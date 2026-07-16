@@ -12,16 +12,27 @@ from sqlalchemy.orm import Session
 import email_send
 import models
 from database import get_db
+from hardening import rate_limit
 from plans import PLANS
 from security import hash_password
 
-router = APIRouter(prefix="/admin", tags=["superadmin"])
+# Rate limit no painel inteiro: no máx. 30 req/min por IP (barra força bruta na chave).
+router = APIRouter(
+    prefix="/admin",
+    tags=["superadmin"],
+    dependencies=[Depends(rate_limit("admin", 30, 60))],
+)
 
 SUPERADMIN_KEY = os.getenv("SUPERADMIN_KEY", "")
 
 
 def _auth(x_admin_key: str = Header(None)):
-    if not SUPERADMIN_KEY or x_admin_key != SUPERADMIN_KEY:
+    # compare_digest evita timing attack na comparação da chave.
+    if (
+        not SUPERADMIN_KEY
+        or not x_admin_key
+        or not secrets.compare_digest(x_admin_key, SUPERADMIN_KEY)
+    ):
         raise HTTPException(status_code=401, detail="Acesso negado.")
 
 

@@ -10,6 +10,7 @@ import email_send
 import models
 import schemas
 from database import get_db
+from hardening import rate_limit
 from plans import TRIAL_DAYS
 from security import (
     create_token,
@@ -42,7 +43,12 @@ def unique_slug(db: Session, base: str) -> str:
     return candidate
 
 
-@router.post("/register", response_model=schemas.AuthOut, status_code=201)
+@router.post(
+    "/register",
+    response_model=schemas.AuthOut,
+    status_code=201,
+    dependencies=[Depends(rate_limit("register", 6, 3600))],  # 6 cadastros/h por IP
+)
 def register(
     payload: schemas.RegisterInput,
     background_tasks: BackgroundTasks,
@@ -101,7 +107,11 @@ def register(
     return schemas.AuthOut(token=create_token(user), user=user, tenant=tenant)
 
 
-@router.post("/login", response_model=schemas.AuthOut)
+@router.post(
+    "/login",
+    response_model=schemas.AuthOut,
+    dependencies=[Depends(rate_limit("login", 12, 60))],  # 12 tentativas/min por IP
+)
 def login(payload: schemas.LoginInput, db: Session = Depends(get_db)):
     user = (
         db.query(models.User).filter(models.User.email == payload.email.lower()).first()

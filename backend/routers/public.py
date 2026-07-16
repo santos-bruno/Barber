@@ -9,6 +9,7 @@ import models
 import schemas
 from booking import compute_availability, create_appointment_core
 from database import get_db
+from hardening import rate_limit
 from security import subscription_active
 from store import create_order_core
 
@@ -79,7 +80,12 @@ def public_availability(
     return schemas.AvailabilityOut(date=date, slots=slots)
 
 
-@router.post("/{slug}/appointments", response_model=schemas.AppointmentOut, status_code=201)
+@router.post(
+    "/{slug}/appointments",
+    response_model=schemas.AppointmentOut,
+    status_code=201,
+    dependencies=[Depends(rate_limit("public_book", 20, 3600))],  # anti-spam de bots
+)
 def public_create_appointment(
     slug: str, payload: schemas.AppointmentCreate, db: Session = Depends(get_db)
 ):
@@ -116,7 +122,12 @@ def public_products(slug: str, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/{slug}/orders", response_model=schemas.OrderOut, status_code=201)
+@router.post(
+    "/{slug}/orders",
+    response_model=schemas.OrderOut,
+    status_code=201,
+    dependencies=[Depends(rate_limit("public_order", 20, 3600))],
+)
 def public_create_order(slug: str, payload: schemas.OrderCreate, db: Session = Depends(get_db)):
     tenant = _get_tenant(db, slug)
     order = create_order_core(db, tenant.id, payload.customer_name, payload.phone, payload.items)
