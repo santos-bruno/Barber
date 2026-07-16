@@ -120,6 +120,30 @@ def v3_test(key: str = "", token: str = ""):
         return {"funciona": False, "erro": str(e)}
 
 
+@router.get("/v3-order-test")
+def v3_order_test(key: str = "", token: str = ""):
+    """Diagnóstico da v3: cria cliente + PEDIDO de teste (SEM cobrar cartão) e
+    mostra as respostas. Valida o schema de pedido antes de qualquer cobrança
+    real. Não gera pagamento — é seguro."""
+    if not _admin_ok(key):
+        raise HTTPException(status_code=401, detail="Acesso negado.")
+    tok = token or appmax.V3_TOKEN
+    if not tok:
+        raise HTTPException(status_code=400, detail="Informe ?token= ou defina APPMAX_V3_TOKEN.")
+    try:
+        cid = appmax.v3_create_customer(
+            "Teste", "Agenda Barber", "teste-agendabarber@example.com",
+            "51999999999", token=tok,
+        )
+        oid = appmax.v3_create_order(
+            customer_id=cid, value_reais=49.90,
+            product_name="Agenda Barber (teste)", sku="plano-teste", token=tok,
+        )
+        return {"funciona": True, "customer_id": cid, "order_id": oid}
+    except Exception as e:  # noqa: BLE001
+        return {"funciona": False, "erro": str(e)}
+
+
 @router.get("/connect")
 def connect(key: str = "", app_id: str = ""):
     """Inicia a instalação do app: autoriza e redireciona o dono para a Appmax.
@@ -179,21 +203,34 @@ def connect_callback(state: str = "", token: str = ""):
         </body></html>"""
     )
 
-# Eventos da Appmax que aprovam/reprovam a assinatura (schema oficial do webhook).
+def _norm_event(ev: str) -> str:
+    """Normaliza o nome do evento (a v3 manda PascalCase 'OrderApproved',
+    a v1 manda 'order_approved') para comparar sem depender de formato."""
+    return "".join(ch for ch in (ev or "").lower() if ch.isalnum())
+
+
+# Eventos que aprovam/reprovam a assinatura (v1 e v3, já normalizados).
 _APPROVE = {
-    "order_approved",
-    "order_paid",
-    "order_paid_by_pix",
-    "order_integrated",
-    "subscription_charge_success",
+    "orderapproved",
+    "orderpaid",
+    "orderpaidbypix",
+    "orderintegrated",
+    "subscriptionchargesuccess",
 }
-_CANCEL = {"subscription_cancelation", "order_refund"}
+_CANCEL = {
+    "subscriptioncancelation",
+    "orderrefund",
+    "ordercancel",
+    "ordercanceled",
+    "ordercancelled",
+}
 _OVERDUE = {
-    "subscription_delayed",
-    "subscription_charge_failed",
-    "payment_not_authorized",
-    "order_billet_overdue",
-    "order_refused_by_risk",
+    "subscriptiondelayed",
+    "subscriptionchargefailed",
+    "paymentnotauthorized",
+    "orderbilletoverdue",
+    "orderrefusedbyrisk",
+    "orderrefused",
 }
 
 
@@ -217,9 +254,16 @@ def _period_days(plan: str) -> int:
 
 
 def _find_tenant_by_payload(db: Session, data: dict):
-    """Localiza a barbearia pelo order_id/customer_id do webhook (campos planos)."""
-    order_id = str(data.get("order_id") or "")
-    customer_id = str(data.get("customer_id") or "")
+    """Localiza a barbearia pelo pedido/cliente do webhook.
+
+    Aceita os dois formatos: v1 (campos planos order_id/customer_id) e v3
+    (data.id = pedido, data.customer.id = cliente).
+    """
+    order_id = str(data.get("order_id") or data.get("id") or "")
+    cust = data.get("customer") or {}
+    customer_id = str(
+        data.get("customer_id") or (cust.get("id") if isinstance(cust, dict) else "") or ""
+    )
     q = db.query(models.Tenant)
     if order_id:
         t = q.filter(models.Tenant.appmax_order_id == order_id).first()
@@ -249,12 +293,12 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
 
     try:
         body = await request.json()
-        event = (body.get("event") or "").lower()
+        event = _norm_event(body.get("event"))
         data = body.get("data") or {}
         # Log só o essencial (sem PII do cliente): evento + ids do pedido/cliente.
         print(
-            f"[appmax webhook] evento={event} "
-            f"order={data.get('order_id')} customer={data.get('customer_id')}"
+            f"[appmax webhook] evento={body.get('event')} "
+            f"order={data.get('order_id') or data.get('id')}"
         )
         tenant = _find_tenant_by_payload(db, data)
         if tenant:
@@ -285,10 +329,30 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
     return {"ok": True}  # sempre 200 (evita retries desnecessários)
 
 
+def _payment_configured() -> bool:
+    """Pagamento disponível se a v3 (token de lojista) OU a v1 estiverem prontas."""
+    return appmax.v3_configured() or appmax.is_configured()
+
+
+def _v3_looks_approved(result: dict) -> bool:
+    """Heurística de aprovação na resposta do pagamento v3 (a liberação
+    definitiva ainda vem pelo webhook; isto é só um bônus imediato)."""
+    if not isinstance(result, dict) or not result.get("success", True):
+        return False
+    data = result.get("data") or {}
+    status_txt = str(data.get("status") or data.get("pay_status") or "").lower()
+    if not status_txt:
+        return False
+    return any(
+        s in status_txt
+        for s in ("aprovad", "autoriz", "integrad", "approv", "author", "paid", "pago")
+    )
+
+
 @router.get("/status")
 def status(_owner: models.User = Depends(require_owner)):
     """Diz se a Appmax está configurada no servidor (para o painel decidir o botão)."""
-    return {"configured": appmax.is_configured()}
+    return {"configured": _payment_configured()}
 
 
 @router.post("/checkout", response_model=schemas.TenantOut)
@@ -299,11 +363,14 @@ def checkout(
     _owner: models.User = Depends(require_owner),
     db: Session = Depends(get_db),
 ):
-    """Cria a assinatura recorrente na Appmax com o token de cartão (Appmax JS)."""
+    """Cria a assinatura na Appmax com os dados do cartão.
+
+    Usa a API v3 clássica (token de lojista) se disponível; senão, a v1.
+    """
     plan = get_plan(payload.plan)
     if not plan:
         raise HTTPException(status_code=400, detail="Plano inválido.")
-    if not appmax.is_configured():
+    if not _payment_configured():
         raise HTTPException(
             status_code=503,
             detail="Pagamento Appmax não configurado no servidor.",
@@ -315,45 +382,66 @@ def checkout(
     first, _, last = full.partition(" ")
     ip = request.client.host if request.client else "0.0.0.0"
 
-    value_cents = int(round(plan["price"] * 100))
-    interval = "year" if plan["id"] == "anual" else "month"
+    approved = False
     try:
-        customer_id = appmax.create_customer(
-            first_name=first,
-            last_name=last,
-            email=email,
-            phone=tenant.whatsapp,
-            ip=ip,
-            document_number=payload.cpf_cnpj,
-        )
-        order_id = appmax.create_order(
-            customer_id=customer_id,
-            value_cents=value_cents,
-            product_name=plan["description"],
-            sku=f"plano-{plan['id']}",
-        )
-        card_token = appmax.tokenize_card(
-            number=payload.card_number,
-            cvv=payload.card_cvv,
-            expiration_month=payload.card_exp_month,
-            expiration_year=payload.card_exp_year,
-            holder_name=payload.holder_name,
-        )
-        appmax.pay_credit_card(
-            order_id=order_id,
-            customer_id=customer_id,
-            card_token=card_token,
-            holder_name=payload.holder_name,
-            holder_document_number=payload.cpf_cnpj,
-            interval=interval,
-        )
+        if appmax.v3_configured():
+            customer_id = appmax.v3_create_customer(
+                first_name=first, last_name=last, email=email,
+                phone=tenant.whatsapp, document_number=payload.cpf_cnpj,
+            )
+            order_id = appmax.v3_create_order(
+                customer_id=customer_id,
+                value_reais=plan["price"],
+                product_name=plan["description"],
+                sku=f"plano-{plan['id']}",
+            )
+            result = appmax.v3_pay_credit_card(
+                order_id=order_id,
+                customer_id=customer_id,
+                card_number=payload.card_number,
+                card_cvv=payload.card_cvv,
+                card_month=payload.card_exp_month,
+                card_year=payload.card_exp_year,
+                holder_name=payload.holder_name,
+                holder_document=payload.cpf_cnpj,
+            )
+            approved = _v3_looks_approved(result)
+        else:
+            # Fallback: fluxo v1 (Bearer/merchant OAuth).
+            value_cents = int(round(plan["price"] * 100))
+            interval = "year" if plan["id"] == "anual" else "month"
+            customer_id = appmax.create_customer(
+                first_name=first, last_name=last, email=email,
+                phone=tenant.whatsapp, ip=ip, document_number=payload.cpf_cnpj,
+            )
+            order_id = appmax.create_order(
+                customer_id=customer_id, value_cents=value_cents,
+                product_name=plan["description"], sku=f"plano-{plan['id']}",
+            )
+            card_token = appmax.tokenize_card(
+                number=payload.card_number, cvv=payload.card_cvv,
+                expiration_month=payload.card_exp_month,
+                expiration_year=payload.card_exp_year,
+                holder_name=payload.holder_name,
+            )
+            appmax.pay_credit_card(
+                order_id=order_id, customer_id=customer_id, card_token=card_token,
+                holder_name=payload.holder_name,
+                holder_document_number=payload.cpf_cnpj, interval=interval,
+            )
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Erro na Appmax: {e}")
 
     tenant.appmax_customer_id = str(customer_id)
     tenant.appmax_order_id = str(order_id)
     tenant.plan = plan["id"]
-    # Liberação definitiva vem pelo webhook (order_approved). Aqui só registramos.
+    # A liberação definitiva vem pelo webhook (order_approved). Se o pagamento já
+    # voltou aprovado, liberamos na hora como bônus (o webhook confirma depois).
+    if approved:
+        tenant.subscription_status = "active"
+        tenant.current_period_end = datetime.utcnow() + timedelta(
+            days=_period_days(plan["id"])
+        )
     db.commit()
     db.refresh(tenant)
     return tenant
