@@ -243,6 +243,10 @@ def v3_pay_credit_card(
     card_month: str, card_year: str, holder_name: str, holder_document: str,
     installments: int = 1, soft_descriptor: str = "AGENDABARBER", token: str = "",
 ) -> dict:
+    _yr = _only_digits(str(card_year))
+    year = int(_yr) if _yr else 0
+    if year < 100:  # "28" -> 2028 (a Appmax espera o ano com 4 dígitos)
+        year += 2000
     body = {
         "cart": {"order_id": order_id},
         "customer": {"customer_id": customer_id},
@@ -250,8 +254,8 @@ def v3_pay_credit_card(
             "CreditCard": {
                 "number": _only_digits(card_number),
                 "cvv": _only_digits(card_cvv),
-                "month": int(str(card_month).lstrip("0") or 0),
-                "year": int(card_year),
+                "month": int(_only_digits(str(card_month)).lstrip("0") or 0),
+                "year": year,
                 "name": holder_name,
                 "document_number": _only_digits(holder_document),
                 "installments": installments,
