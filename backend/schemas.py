@@ -38,6 +38,7 @@ class TenantOut(BaseModel):
     address: str
     whatsapp: str
     logo_url: str = ""
+    min_cancel_hours: int = 3
     plan: str
     subscription_status: str
     trial_ends_at: Optional[datetime] = None
@@ -51,6 +52,7 @@ class TenantUpdate(BaseModel):
     address: Optional[str] = Field(default=None, max_length=200)
     # data URL da logo (imagem redimensionada no navegador); ~até 600 KB
     logo_url: Optional[str] = Field(default=None, max_length=600000)
+    min_cancel_hours: Optional[int] = Field(default=None, ge=0, le=168)
 
 
 class UserOut(BaseModel):
@@ -157,6 +159,7 @@ class AppointmentOut(AppointmentBase):
     status: str
     source: str
     barber_name: str = ""
+    cancel_token: str = ""
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 

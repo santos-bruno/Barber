@@ -107,6 +107,9 @@
     <p id="ok-summary" class="hint" style="margin-top:10px"></p>
     <a id="wa-link" class="wa-btn" href="#" target="_blank">Confirmar no WhatsApp</a>
     <div><button class="cta" style="max-width:230px;margin:20px auto 0" onclick="location.reload()">Novo agendamento</button></div>
+    <div id="cancel-wrap" style="display:none;margin-top:18px">
+      <a id="cancel-link" href="#" style="color:var(--muted);font-size:13.5px;text-decoration:underline">Precisa cancelar? Toque aqui</a>
+    </div>
   </div>
 
   <footer><span class="fb">💈 Powered by <b style="color:#C6CDDA">Agenda Barber</b></span></footer>
@@ -207,10 +210,12 @@
         const r = await fetch(P + '/appointments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (r.status === 409) { $('err').textContent = 'Esse horário acabou de ser ocupado. Escolha outro.'; loadSlots(); validate(); return; }
         if (!r.ok) throw new Error('HTTP ' + r.status);
+        const appt = await r.json().catch(() => ({}));
         const msg = `Olá, tudo bem? Fiz um agendamento em ${biz.nome}: ${sel.service.name} para ${fmtDateBR(sel.date)} às ${sel.time}. (Cliente: ${payload.customer_name})`;
         $('ok-summary').textContent = msg;
         if (biz.whatsapp_number) { $('wa-link').href = `https://wa.me/55${biz.whatsapp_number.replace(/^55/, '')}?text=${encodeURIComponent(msg)}`; }
         else { $('wa-link').style.display = 'none'; }
+        if (appt && appt.cancel_token) { $('cancel-link').href = `/cancelar/${slug}?t=${encodeURIComponent(appt.cancel_token)}`; $('cancel-wrap').style.display = 'block'; }
         $('form-view').style.display = 'none'; $('ok-view').style.display = 'block'; window.scrollTo(0, 0);
       } catch (e) { $('err').textContent = 'Não foi possível concluir. Tente novamente.'; validate(); }
     }

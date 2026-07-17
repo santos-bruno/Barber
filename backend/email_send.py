@@ -312,3 +312,63 @@ def send_owner_new_subscription(shop_name: str, plan: str, owner_email: str = ""
             ("Status", "Assinatura ATIVA"),
         ]),
     )
+
+
+# ---------------------------------------------------------------------------
+# Avisos para o DONO DA BARBEARIA (novo agendamento / cancelamento do cliente).
+# ---------------------------------------------------------------------------
+def _shop_html(title: str, emoji: str, color: str, rows: list) -> str:
+    items = "".join(
+        f'<p style="margin:6px 0"><strong style="color:#F0C24B">{k}:</strong> {v}</p>'
+        for k, v in rows
+    )
+    return f"""
+    <div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0F1115;color:#F4F6FB;padding:24px;border-radius:16px;max-width:560px;margin:0 auto">
+      <div style="text-align:center"><div style="font-size:38px">{emoji}</div>
+      <h1 style="color:{color};margin:6px 0;font-size:20px">{title}</h1></div>
+      <div style="background:#171A21;border:1px solid #262B36;border-radius:12px;padding:16px;margin:14px 0">{items}</div>
+      <p style="text-align:center"><a href="{APP_BASE_URL}/gerente" style="color:#F0C24B">Abrir minha agenda</a></p>
+    </div>
+    """
+
+
+def send_shop_new_booking(
+    owner_email: str, shop_name: str, customer_name: str,
+    service_name: str, date_str: str, time_str: str, barber_name: str = "",
+) -> None:
+    """Avisa o dono da barbearia que um cliente marcou um horário pelo link."""
+    if not is_configured() or not owner_email:
+        return
+    rows = [
+        ("Cliente", customer_name),
+        ("Serviço", service_name),
+        ("Data", date_str),
+        ("Horário", time_str),
+    ]
+    if barber_name:
+        rows.append(("Barbeiro", barber_name))
+    send_email(
+        owner_email,
+        f"📅 Novo agendamento: {customer_name} · {date_str} {time_str}",
+        _shop_html("Novo agendamento! 📅", "📅", "#3FCB86", rows),
+    )
+
+
+def send_shop_cancellation(
+    owner_email: str, shop_name: str, customer_name: str,
+    service_name: str, date_str: str, time_str: str,
+) -> None:
+    """Avisa o dono da barbearia que um cliente cancelou pelo link."""
+    if not is_configured() or not owner_email:
+        return
+    send_email(
+        owner_email,
+        f"❌ Agendamento cancelado: {customer_name} · {date_str} {time_str}",
+        _shop_html("Agendamento cancelado ❌", "❌", "#FF5C5C", [
+            ("Cliente", customer_name),
+            ("Serviço", service_name),
+            ("Data", date_str),
+            ("Horário", time_str),
+            ("Aviso", "O horário ficou livre de novo na sua agenda."),
+        ]),
+    )

@@ -157,6 +157,8 @@ def update_tenant(
         if logo and not logo.startswith("data:image/"):
             raise HTTPException(status_code=400, detail="Logo inválida.")
         tenant.logo_url = logo
+    if payload.min_cancel_hours is not None:
+        tenant.min_cancel_hours = payload.min_cancel_hours
     db.commit()
     db.refresh(tenant)
     return tenant

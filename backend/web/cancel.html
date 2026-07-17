@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/favicon.png" />
+  <title>Cancelar agendamento</title>
+  <style>
+    :root{--bg:#0E1014;--surface:#161922;--surface2:#1C2029;--primary:#F0C24B;--gold1:#F6D06B;--gold2:#D99A2B;--text:#F5F7FB;--muted:#98A2B3;--border:#242A36;--wa:#25D366;--danger:#FF5C5C;--ok:#3FCB86;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;padding:18px;max-width:520px;margin:0 auto;-webkit-font-smoothing:antialiased;
+      background-image:radial-gradient(900px 400px at 50% -90px, rgba(240,194,75,.10), transparent 62%);}
+    header{text-align:center;margin:26px 0 8px;}
+    .badge{width:74px;height:74px;border-radius:22px;margin:0 auto;background:linear-gradient(135deg,var(--gold1),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 12px 30px rgba(217,154,43,.4);overflow:hidden;}
+    .badge img{width:100%;height:100%;object-fit:cover;}
+    h1{font-size:22px;margin-top:14px;letter-spacing:-.3px;font-weight:820;}
+    .card{background:linear-gradient(180deg,var(--surface),#12151d);border:1px solid var(--border);border-radius:20px;padding:22px;margin-top:18px;box-shadow:0 12px 34px rgba(0,0,0,.28);}
+    .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+    .row:last-child{border-bottom:none;}
+    .row .k{color:var(--muted);} .row .v{font-weight:700;text-align:right;}
+    .btn{width:100%;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;margin-top:16px;transition:filter .12s, transform .1s;}
+    .btn:active{transform:translateY(1px);}
+    .btn-danger{background:var(--danger);color:#fff;box-shadow:0 12px 28px rgba(255,92,92,.28);}
+    .btn-danger:hover{filter:brightness(1.05);}
+    .btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+    .wa-btn{display:block;text-align:center;background:var(--wa);color:#fff;text-decoration:none;padding:15px;border-radius:14px;font-weight:800;margin-top:12px;}
+    .note{color:var(--muted);font-size:13.5px;margin-top:12px;text-align:center;}
+    .badge-status{display:inline-block;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:800;text-transform:uppercase;}
+    .s-ok{background:rgba(63,203,134,.15);color:var(--ok);border:1px solid rgba(63,203,134,.4);}
+    .s-cancel{background:rgba(255,92,92,.15);color:#ff9b9b;border:1px solid rgba(255,92,92,.4);}
+    .center{text-align:center;}
+    .big-emoji{font-size:56px;}
+    #fatal{text-align:center;padding:56px 16px;color:var(--muted);}
+    .hidden{display:none;}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge" id="badge">💈</div>
+    <h1 id="shop">Cancelar agendamento</h1>
+  </header>
+
+  <div id="fatal" class="hidden"></div>
+  <div id="view" class="hidden"></div>
+
+  <script>
+    const parts = location.pathname.split('/cancelar/');
+    const slug = (parts[1] || '').replace(/\/$/, '');
+    const token = new URLSearchParams(location.search).get('t') || '';
+    const P = '/public/' + slug;
+    const $ = (id) => document.getElementById(id);
+    let info = null;
+
+    async function init() {
+      if (!slug || !token) return fatal('Link de cancelamento inválido.');
+      try {
+        const r = await fetch(`${P}/appointment/${encodeURIComponent(token)}`);
+        if (r.status === 404) return fatal('Agendamento não encontrado. O link pode ter expirado.');
+        if (!r.ok) throw new Error();
+        info = await r.json();
+        $('shop').textContent = info.shop;
+        document.title = 'Cancelar — ' + info.shop;
+        render();
+      } catch (e) { fatal('Não foi possível carregar. Tente novamente.'); }
+    }
+
+    function waHref(txt) {
+      if (!info.whatsapp_number) return null;
+      return `https://wa.me/55${info.whatsapp_number.replace(/^55/, '')}?text=${encodeURIComponent(txt)}`;
+    }
+
+    function details() {
+      return `<div class="card">
+        <div class="row"><span class="k">Cliente</span><span class="v">${info.customer_name}</span></div>
+        <div class="row"><span class="k">Serviço</span><span class="v">${info.service_name}</span></div>
+        ${info.barber_name ? `<div class="row"><span class="k">Barbeiro</span><span class="v">${info.barber_name}</span></div>` : ''}
+        <div class="row"><span class="k">Data</span><span class="v">${info.date}</span></div>
+        <div class="row"><span class="k">Horário</span><span class="v">${info.time}</span></div>
+      </div>`;
+    }
+
+    function render() {
+      const v = $('view'); v.classList.remove('hidden');
+      if (info.already_canceled) {
+        v.innerHTML = `<div class="card center"><span class="badge-status s-cancel">Cancelado</span>
+          <p class="note" style="margin-top:12px">Este agendamento já foi cancelado.</p></div>` + details();
+        return;
+      }
+      if (!info.can_cancel) {
+        const wa = waHref(`Olá! Preciso cancelar/remarcar meu horário de ${info.date} às ${info.time} (${info.customer_name}).`);
+        v.innerHTML = details() + `<div class="card">
+          <p class="note" style="margin-top:0">⏰ O cancelamento pelo link só é permitido até <b>${info.min_cancel_hours}h antes</b> do horário. Como já passou desse prazo, fale direto com a barbearia:</p>
+          ${wa ? `<a class="wa-btn" href="${wa}" target="_blank">Falar no WhatsApp</a>` : ''}
+        </div>`;
+        return;
+      }
+      v.innerHTML = details() + `<div class="card">
+        <p class="note" style="margin-top:0">Tem certeza que deseja cancelar este agendamento? O horário voltará a ficar livre.</p>
+        <button class="btn btn-danger" onclick="doCancel()">Sim, cancelar agendamento</button>
+        <div class="note" id="msg"></div>
+      </div>`;
+    }
+
+    async function doCancel() {
+      const msg = $('msg'); msg.textContent = 'Cancelando…';
+      try {
+        const r = await fetch(`${P}/appointment/${encodeURIComponent(token)}/cancel`, { method: 'POST' });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) { msg.style.color = 'var(--danger)'; msg.textContent = data.detail || 'Não foi possível cancelar.'; return; }
+        const wa = waHref(`Olá! Cancelei meu horário de ${info.date} às ${info.time} pelo link. (${info.customer_name})`);
+        $('view').innerHTML = `<div class="card center">
+          <div class="big-emoji">✅</div>
+          <h1 style="margin-top:8px">Agendamento cancelado</h1>
+          <p class="note">Pronto! O horário de <b>${info.date} às ${info.time}</b> foi liberado. A barbearia foi avisada.</p>
+          ${wa ? `<a class="wa-btn" href="${wa}" target="_blank">Avisar no WhatsApp</a>` : ''}
+        </div>`;
+      } catch (e) { msg.style.color = 'var(--danger)'; msg.textContent = 'Erro de conexão. Tente de novo.'; }
+    }
+
+    function fatal(m) { const f = $('fatal'); f.classList.remove('hidden'); f.textContent = m; }
+    init();
+  </script>
+</body>
+</html>

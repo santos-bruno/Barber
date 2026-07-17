@@ -108,6 +108,7 @@
       </div>
       <nav id="nav">
         <div class="nav-group">Gestão</div>
+        <div class="nav-item" data-id="atividade" onclick="go('atividade')"><span class="ic">🔔</span>Atividade</div>
         <div class="nav-item" data-id="assinantes" onclick="go('assinantes')"><span class="ic">🏪</span>Assinantes</div>
         <div class="nav-item" data-id="sistema" onclick="go('sistema')"><span class="ic">📧</span>E-mail / Sistema</div>
       </nav>
@@ -127,7 +128,15 @@
     const money = (v) => 'R$ ' + Number(v||0).toFixed(2).replace('.', ',');
     const dateBR = (iso) => iso ? new Date(iso).toLocaleDateString('pt-BR') : '—';
     let DATA = null;
-    let current = 'assinantes';
+    let current = 'atividade';
+    function timeAgo(iso){
+      if(!iso) return '';
+      const s=Math.max(0,(Date.now()-new Date(iso).getTime())/1000);
+      if(s<3600) return 'há '+Math.floor(s/60)+' min';
+      if(s<86400) return 'há '+Math.floor(s/3600)+'h';
+      const d=Math.floor(s/86400);
+      return d===1?'ontem':'há '+d+' dias';
+    }
 
     async function api(path, method='GET') {
       const key = localStorage.getItem(KEY) || '';
@@ -157,7 +166,29 @@
       if(window.innerWidth<=860) toggleNav(false);
       window.scrollTo(0,0);
     }
-    function render(){ (current==='sistema' ? vSistema : vAssinantes)(); }
+    function render(){ ({atividade:vAtividade, sistema:vSistema, assinantes:vAssinantes}[current] || vAtividade)(); }
+
+    // ---------- ATIVIDADE (vendas / novos assinantes) ----------
+    function vAtividade(){
+      const d = DATA;
+      const list = [...d.barbearias].sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
+      const feed = list.map(b=>{
+        const paid = b.status==='active';
+        return `<div class="row"><div class="rh"><div>
+            <div class="name">${paid?'💳 ':'🆕 '}${b.name}</div>
+            <div class="email">${b.owner_email || 'sem e-mail'}${b.whatsapp?' · '+b.whatsapp:''}</div>
+          </div>${badge(b.status)}</div>
+          <div class="meta">Cadastro ${dateBR(b.created_at)} · ${timeAgo(b.created_at)}${b.plan?' · plano '+b.plan:''}</div></div>`;
+      }).join('');
+      $('view').innerHTML = `<h2>Atividade</h2><div class="subtitle">Seus novos cadastros e assinantes, do mais recente ao mais antigo.</div>
+        <div class="stats">
+          <div class="stat"><div class="n">${d.total_barbearias}</div><div class="l">no total</div></div>
+          <div class="stat"><div class="n">${d.assinantes_ativos}</div><div class="l">pagando</div></div>
+          <div class="stat"><div class="n">${d.em_teste}</div><div class="l">em teste</div></div>
+          <div class="stat"><div class="n">${money(d.mrr_estimado)}</div><div class="l">receita/mês</div></div>
+        </div>
+        ${feed || '<p class="muted">Nenhum cadastro ainda. Divulgue o link e comece a vender! 🚀</p>'}`;
+    }
 
     async function load() {
       try {

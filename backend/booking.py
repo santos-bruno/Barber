@@ -1,4 +1,5 @@
 """Lógica compartilhada de disponibilidade e criação de agendamentos."""
+import secrets
 from datetime import date as date_type
 from datetime import datetime, time
 from typing import List, Optional
@@ -224,6 +225,7 @@ def create_appointment_core(
         payment_type=payment_type,
         client_subscription_id=subscription.id if subscription else None,
         notes=notes,
+        cancel_token=secrets.token_urlsafe(16),
     )
     db.add(appointment)
     db.commit()

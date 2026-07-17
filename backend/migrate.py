@@ -21,12 +21,14 @@ EXPECTED = {
         "appmax_customer_id": "VARCHAR DEFAULT ''",
         "appmax_order_id": "VARCHAR DEFAULT ''",
         "logo_url": "TEXT DEFAULT ''",
+        "min_cancel_hours": "INTEGER DEFAULT 3",
     },
     "appointments": {
         "barber_id": "INTEGER",
         "barber_name": "VARCHAR DEFAULT ''",
         "payment_type": "VARCHAR DEFAULT 'avista'",
         "client_subscription_id": "INTEGER",
+        "cancel_token": "VARCHAR DEFAULT ''",
     },
     "users": {
         "active": "__bool__",

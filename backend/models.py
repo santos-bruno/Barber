@@ -29,6 +29,8 @@ class Tenant(Base):
     address = Column(String, default="")
     whatsapp = Column(String, default="")
     logo_url = Column(Text, default="")  # logo/foto da barbearia (data URL redimensionada)
+    # Antecedência mínima (horas) para o cliente cancelar sozinho pelo link.
+    min_cancel_hours = Column(Integer, default=3)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Assinatura
@@ -110,6 +112,8 @@ class Appointment(Base):
     payment_type = Column(String, default="avista")
     client_subscription_id = Column(Integer, ForeignKey("client_subscriptions.id"), nullable=True)
     notes = Column(String, default="")
+    # Token aleatório para o cliente cancelar pelo link público (sem login).
+    cancel_token = Column(String, default="", index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     client = relationship("Client", back_populates="appointments")

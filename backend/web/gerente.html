@@ -525,6 +525,15 @@
           <div><label class="label">Endereço</label><input id="pz-addr" value="${(t.address||'').replace(/"/g,'&quot;')}"/></div></div>
           <button class="gold primary" style="width:100%;margin-top:18px" onclick="savePerson()">Salvar alterações</button>
           <div class="err" id="pz-msg"></div>
+        </div>
+        <div class="card" style="max-width:600px;margin-top:14px">
+          <strong>Regras de cancelamento</strong>
+          <p class="muted" style="font-size:13px;margin:6px 0 4px">Até quantas horas antes o cliente pode cancelar sozinho pelo link. Depois disso, ele é orientado a falar no WhatsApp.</p>
+          <label class="label">Antecedência mínima (horas)</label>
+          <input id="pz-cancel" type="number" min="0" max="168" value="${t.min_cancel_hours!=null?t.min_cancel_hours:3}" style="max-width:160px"/>
+          <div class="muted" style="font-size:12.5px;margin-top:8px">0 = pode cancelar a qualquer momento. Ex: 3 = até 3h antes do horário.</div>
+          <button class="gold small" style="margin-top:12px" onclick="saveCancelRule()">Salvar regra</button>
+          <div class="err" id="pz-cmsg"></div>
         </div>`;
       _pendingLogo=null;
       $('pz-file').onchange = onLogoPick;
@@ -561,6 +570,12 @@
     async function removeLogo(){
       if(!confirm('Remover a logo?')) return;
       try{ const t=await api('/auth/tenant',{method:'PATCH',body:JSON.stringify({logo_url:''})}); ME.tenant=t; refreshBrand(); vPersonalizar(); }catch(e){ alert(e.message); }
+    }
+    async function saveCancelRule(){
+      const m=$('pz-cmsg'); m.className='err'; m.textContent='';
+      const h=parseInt($('pz-cancel').value,10);
+      if(isNaN(h)||h<0||h>168){ m.textContent='Informe um número de horas entre 0 e 168.'; return; }
+      try{ const t=await api('/auth/tenant',{method:'PATCH',body:JSON.stringify({min_cancel_hours:h})}); ME.tenant=t; m.className='ok'; m.textContent='✓ Regra salva.'; }catch(e){ m.textContent=e.message; }
     }
 
     // ---------- MINHA CONTA ----------

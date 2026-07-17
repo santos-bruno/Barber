@@ -213,6 +213,12 @@ def store(slug: str):
     return _serve_public(slug, "store.html", "loja")
 
 
+@app.get("/cancelar/{slug}")
+def cancel_page(slug: str):
+    """Página pública para o cliente cancelar o agendamento (lê o token da URL)."""
+    return _serve("cancel.html")
+
+
 @app.get("/painel")
 def owner_panel():
     """Painel do dono do SaaS (protegido pela chave de administrador)."""
