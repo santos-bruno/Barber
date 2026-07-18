@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "807669741845",
+    "project_id": "agenda-barber-ae2ee",
+    "storage_bucket": "agenda-barber-ae2ee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:807669741845:android:d9ebf681664d5d055c111c",
+        "android_client_info": {
+          "package_name": "com.agendabarber.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDerSco1YMq-mJmmNRjv_SFQ9XkpQPhxgM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

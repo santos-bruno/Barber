@@ -41,6 +41,10 @@ export const getAppmaxStatus = () => req('/billing/appmax/status');
 export const appmaxCheckout = (data) =>
   req('/billing/appmax/checkout', { method: 'POST', body: JSON.stringify(data) });
 
+// ---- Notificações (push) ----
+export const registerPushToken = (data) =>
+  req('/notifications/register', { method: 'POST', body: JSON.stringify(data) });
+
 // ---- Health ----
 export const getHealth = () => req('/health');
 

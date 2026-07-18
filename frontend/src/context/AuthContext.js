@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import { getMe } from '../api/client';
 import { clearSession, getStoredTenant, getToken, setSession } from '../auth/session';
+import { registerForPush } from '../push';
 
 const AuthContext = createContext(null);
 
@@ -23,6 +24,7 @@ export function AuthProvider({ children }) {
           setTenant(me.tenant);
           setUser(me.user);
           await setSession({ tenant: me.tenant });
+          registerForPush();
         } catch (e) {
           // token inválido/expirado
           if (e.status === 401) {
@@ -41,6 +43,7 @@ export function AuthProvider({ children }) {
     setToken(auth.token);
     setTenant(auth.tenant);
     setUser(auth.user);
+    registerForPush();
   };
 
   const signOut = async () => {
