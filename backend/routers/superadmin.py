@@ -136,6 +136,41 @@ def email_test(to: str, db: Session = Depends(get_db)):
     return email_send.send_test(to)
 
 
+@router.post("/daily-digest", dependencies=[Depends(_auth)])
+def daily_digest(db: Session = Depends(get_db)):
+    """Envia o resumo diário para cada barbearia com movimento (hoje/amanhã).
+
+    Feito para ser disparado por um cron diário (ex.: cron-job.org) chamando
+    este endpoint com o header X-Admin-Key. Pula barbearias sem agendamentos.
+    """
+    today = datetime.now().date()
+    tomorrow = today + timedelta(days=1)
+    ativos = ("pendente", "confirmado", "concluido")
+    sent = 0
+    for t in db.query(models.Tenant).all():
+        base = db.query(models.Appointment).filter(models.Appointment.tenant_id == t.id)
+        hoje_total = base.filter(
+            models.Appointment.date == today, models.Appointment.status.in_(ativos)
+        ).count()
+        hoje_cancel = base.filter(
+            models.Appointment.date == today, models.Appointment.status == "cancelado"
+        ).count()
+        amanha = base.filter(
+            models.Appointment.date == tomorrow,
+            models.Appointment.status.in_(("pendente", "confirmado")),
+        ).count()
+        if not (hoje_total or hoje_cancel or amanha):
+            continue  # sem movimento: não manda e-mail à toa
+        owner = _owner_email(db, t.id)
+        if not owner:
+            continue
+        email_send.send_shop_daily_digest(
+            owner, t.name, today.strftime("%d/%m/%Y"), hoje_total, hoje_cancel, amanha
+        )
+        sent += 1
+    return {"ok": True, "sent": sent, "date": today.strftime("%d/%m/%Y")}
+
+
 @router.post("/tenants/{tenant_id}/trial", dependencies=[Depends(_auth)])
 def extend_trial(tenant_id: int, days: int = 7, db: Session = Depends(get_db)):
     """Estende (ou reabre) o período de teste por N dias."""

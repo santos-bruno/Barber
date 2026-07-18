@@ -372,3 +372,21 @@ def send_shop_cancellation(
             ("Aviso", "O horário ficou livre de novo na sua agenda."),
         ]),
     )
+
+
+def send_shop_daily_digest(
+    owner_email: str, shop_name: str, date_str: str,
+    hoje_total: int, hoje_cancel: int, amanha: int,
+) -> None:
+    """Resumo diário da barbearia (agendamentos de hoje, cancelamentos e amanhã)."""
+    if not is_configured() or not owner_email:
+        return
+    send_email(
+        owner_email,
+        f"📊 Resumo do dia · {shop_name} · {date_str}",
+        _shop_html(f"Resumo do dia — {date_str} 📊", "📊", "#F0C24B", [
+            ("Agendamentos de hoje", f"{hoje_total}"),
+            ("Cancelamentos de hoje", f"{hoje_cancel}"),
+            ("Marcados para amanhã", f"{amanha}"),
+        ]),
+    )

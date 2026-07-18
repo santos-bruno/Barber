@@ -28,6 +28,30 @@ def _owner_email(db: Session, tenant_id: int) -> str:
     return u.email if u else ""
 
 
+def _barber_email(db: Session, tenant_id: int, barber_id) -> str:
+    """E-mail do barbeiro atribuído (para avisá-lo do agendamento dele)."""
+    if not barber_id:
+        return ""
+    b = (
+        db.query(models.User)
+        .filter(models.User.id == barber_id, models.User.tenant_id == tenant_id)
+        .first()
+    )
+    return b.email if b and b.active else ""
+
+
+def _notify_targets(db: Session, tenant_id: int, barber_id) -> list:
+    """Quem avisar: o dono + o barbeiro atribuído (sem repetir o mesmo e-mail)."""
+    emails = []
+    owner = _owner_email(db, tenant_id)
+    if owner:
+        emails.append(owner)
+    barber = _barber_email(db, tenant_id, barber_id)
+    if barber and barber not in emails:
+        emails.append(barber)
+    return emails
+
+
 def _fmt_date(d) -> str:
     try:
         return d.strftime("%d/%m/%Y")
@@ -158,12 +182,11 @@ def public_create_appointment(
         payment_type="avista",
         barber_id=payload.barber_id,
     )
-    # Avisa o dono da barbearia por e-mail (em segundo plano).
-    owner = _owner_email(db, tenant.id)
-    if owner:
+    # Avisa o dono e o barbeiro atribuído por e-mail (em segundo plano).
+    for target in _notify_targets(db, tenant.id, appt.barber_id):
         background_tasks.add_task(
             email_send.send_shop_new_booking,
-            owner, tenant.name, appt.customer_name, appt.service_name,
+            target, tenant.name, appt.customer_name, appt.service_name,
             _fmt_date(appt.date), _fmt_time(appt.time), appt.barber_name or "",
         )
     return appt
@@ -239,11 +262,10 @@ def public_cancel_appointment(
         )
     appt.status = "cancelado"
     db.commit()
-    owner = _owner_email(db, tenant.id)
-    if owner:
+    for target in _notify_targets(db, tenant.id, appt.barber_id):
         background_tasks.add_task(
             email_send.send_shop_cancellation,
-            owner, tenant.name, appt.customer_name, appt.service_name,
+            target, tenant.name, appt.customer_name, appt.service_name,
             _fmt_date(appt.date), _fmt_time(appt.time),
         )
     return {"ok": True, "status": "cancelado"}
