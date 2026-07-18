@@ -26,6 +26,7 @@ from routers import (
     cashflow,
     clients,
     hours,
+    notifications,
     products,
     public,
     services,
@@ -91,6 +92,7 @@ app.include_router(subscriptions.router)
 app.include_router(products.router)
 app.include_router(staff.router)
 app.include_router(superadmin.router)
+app.include_router(notifications.router)
 
 
 @app.on_event("startup")

@@ -70,6 +70,11 @@ services:
         sync: false
       - key: APPMAX_WEBHOOK_TOKEN
         sync: false                  # opcional: valida o webhook da Appmax
+      # Push (Firebase Cloud Messaging) — opcional
+      - key: FCM_SERVICE_ACCOUNT_JSON
+        sync: false                  # JSON da conta de serviço do Firebase (secreto)
+      - key: FCM_PROJECT_ID
+        sync: false                  # opcional; se vazio, usa o project_id do JSON
 
 databases:
   - name: agenda-barber-db

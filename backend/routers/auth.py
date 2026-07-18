@@ -8,9 +8,11 @@ from sqlalchemy.orm import Session
 
 import email_send
 import models
+import push
 import schemas
 from database import get_db
 from hardening import rate_limit
+from routers.notifications import admin_tokens
 from plans import TRIAL_DAYS
 from security import (
     create_token,
@@ -104,6 +106,12 @@ def register(
         user.email,
         tenant.whatsapp,
     )
+    atk = admin_tokens(db)
+    if atk:
+        background_tasks.add_task(
+            push.send_push, atk, "Novo cadastro 🆕",
+            f"{tenant.name} começou o teste grátis.", {"type": "signup"},
+        )
 
     return schemas.AuthOut(token=create_token(user), user=user, tenant=tenant)
 

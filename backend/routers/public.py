@@ -10,12 +10,30 @@ from sqlalchemy.orm import Session
 
 import email_send
 import models
+import push
 import schemas
 from booking import compute_availability, create_appointment_core
 from database import get_db
 from hardening import rate_limit
+from routers.notifications import tokens_for_users
 from security import subscription_active
 from store import create_order_core
+
+
+def _notify_user_ids(db: Session, tenant_id: int, barber_id) -> list:
+    """IDs de usuários a notificar via push: dono + barbeiro atribuído."""
+    ids = []
+    owner = (
+        db.query(models.User)
+        .filter(models.User.tenant_id == tenant_id, models.User.role == "owner")
+        .order_by(models.User.id)
+        .first()
+    )
+    if owner:
+        ids.append(owner.id)
+    if barber_id and barber_id not in ids:
+        ids.append(barber_id)
+    return ids
 
 
 def _owner_email(db: Session, tenant_id: int) -> str:
@@ -189,6 +207,14 @@ def public_create_appointment(
             target, tenant.name, appt.customer_name, appt.service_name,
             _fmt_date(appt.date), _fmt_time(appt.time), appt.barber_name or "",
         )
+    # Push no celular (se configurado).
+    ptokens = tokens_for_users(db, _notify_user_ids(db, tenant.id, appt.barber_id))
+    if ptokens:
+        background_tasks.add_task(
+            push.send_push, ptokens, "Novo agendamento 📅",
+            f"{appt.customer_name} · {_fmt_date(appt.date)} às {_fmt_time(appt.time)}",
+            {"type": "booking", "slug": slug},
+        )
     return appt
 
 
@@ -267,6 +293,13 @@ def public_cancel_appointment(
             email_send.send_shop_cancellation,
             target, tenant.name, appt.customer_name, appt.service_name,
             _fmt_date(appt.date), _fmt_time(appt.time),
+        )
+    ptokens = tokens_for_users(db, _notify_user_ids(db, tenant.id, appt.barber_id))
+    if ptokens:
+        background_tasks.add_task(
+            push.send_push, ptokens, "Agendamento cancelado ❌",
+            f"{appt.customer_name} · {_fmt_date(appt.date)} às {_fmt_time(appt.time)}",
+            {"type": "cancel", "slug": slug},
         )
     return {"ok": True, "status": "cancelado"}
 

@@ -119,6 +119,20 @@ class Appointment(Base):
     client = relationship("Client", back_populates="appointments")
 
 
+class PushToken(Base):
+    """Token de dispositivo (FCM) para notificação push."""
+
+    __tablename__ = "push_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=True, index=True)
+    is_admin = Column(Boolean, default=False)  # token do dono do SaaS (recebe avisos de venda)
+    platform = Column(String, default="android")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Transaction(Base):
     __tablename__ = "transactions"
 

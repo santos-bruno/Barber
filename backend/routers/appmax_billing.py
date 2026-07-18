@@ -319,6 +319,15 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
                         email_send.send_owner_new_subscription,
                         tenant.name, tenant.plan, owner.email if owner else "",
                     )
+                    from routers.notifications import admin_tokens
+                    import push
+                    atk = admin_tokens(db)
+                    if atk:
+                        background_tasks.add_task(
+                            push.send_push, atk, "Nova assinatura! 💳🚀",
+                            f"{tenant.name} assinou o plano {tenant.plan or ''}.".strip(),
+                            {"type": "subscription"},
+                        )
             elif event in _OVERDUE:
                 tenant.subscription_status = "overdue"
             elif event in _CANCEL:
