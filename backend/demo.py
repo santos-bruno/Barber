@@ -24,14 +24,40 @@ DEMO_EMAIL = os.getenv("DEMO_EMAIL", "demo@agendabarber.com")
 DEMO_PASSWORD = os.getenv("DEMO_PASSWORD", "demo123")
 
 
+def _refresh_demo(db: Session, tenant_id: int) -> None:
+    """Mantém a demo 'viva': re-data os agendamentos e o caixa para HOJE.
+
+    Sem isso, a agenda da demonstração fica presa na data do deploy e aparece
+    vazia quando um cliente em potencial abre o link — demo vazia não vende.
+    """
+    hoje = date.today()
+    appts = (
+        db.query(models.Appointment)
+        .filter(models.Appointment.tenant_id == tenant_id)
+        .all()
+    )
+    if appts and all(a.date < hoje for a in appts):
+        for a in appts:
+            a.date = hoje
+        for t in (
+            db.query(models.Transaction)
+            .filter(models.Transaction.tenant_id == tenant_id)
+            .all()
+        ):
+            t.date = hoje
+        db.commit()
+
+
 def seed_demo() -> None:
     if os.getenv("SEED_DEMO", "").lower() not in ("1", "true", "yes"):
         return
 
     db: Session = SessionLocal()
     try:
-        if db.query(models.User).filter(models.User.email == DEMO_EMAIL).first():
-            return  # já existe
+        existing = db.query(models.User).filter(models.User.email == DEMO_EMAIL).first()
+        if existing:
+            _refresh_demo(db, existing.tenant_id)
+            return  # já existe (só re-data)
 
         tenant = models.Tenant(
             name="Barbearia Demo",
